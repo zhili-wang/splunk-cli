@@ -35,6 +35,5 @@ coverage/
 
 # Editors / OS
 .idea/
-.vscode/
 .DS_Store
 *.swp
