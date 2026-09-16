@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <!-- The mark is white, so it needs a dark tile to be visible at all: the tile is
+       the dashboard's own darkest surface (#08090C = --ink-950), which keeps the
+       tab looking like the page it belongs to. Source mark: web/assets/appIcon.png. -->
+  <link rel="icon" type="image/png" href="/appIcon.png" />
+  <link rel="apple-touch-icon" href="/appIcon.png" />
+  <!-- Paints the browser chrome (mobile address bar, task switcher) the same black. -->
+  <meta name="theme-color" content="#08090C" />
+  <title>Splunk 日志面板</title>
+  <script>
+    // Applied before the first paint, so a light-mode reload does not flash dark
+    // while the bundle loads. The key and values mirror src/lib/theme.ts, and
+    // dark is the default already in the markup.
+    try {
+      var stored = localStorage.getItem('splunk-cli:theme')
+      if (stored === 'light' || stored === 'dark') {
+        document.documentElement.dataset.theme = stored
+      }
+    } catch (error) {
+      /* Blocked storage: the default in the markup stands. */
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

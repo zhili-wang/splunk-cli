@@ -1,0 +1,178 @@
+{
+  "links": {},
+  "origin": "https://placeholder.invalid/services/search/jobs",
+  "updated": "2026-09-15T00:00:00.000+00:00",
+  "generator": {
+    "build": "a7f645ddaf91",
+    "version": "8.0.2"
+  },
+  "entry": [
+    {
+      "name": "makeresults count=5",
+      "id": "https://placeholder.invalid/services/search/jobs/1700000000.00001",
+      "updated": "2026-09-15T00:00:00.000+00:00",
+      "links": {
+        "alternate": "/services/search/jobs/1700000000.00001",
+        "search_telemetry.json": "/services/search/jobs/1700000000.00001/search_telemetry.json",
+        "search.log": "/services/search/jobs/1700000000.00001/search.log",
+        "events": "/services/search/jobs/1700000000.00001/events",
+        "results": "/services/search/jobs/1700000000.00001/results",
+        "results_preview": "/services/search/jobs/1700000000.00001/results_preview",
+        "timeline": "/services/search/jobs/1700000000.00001/timeline",
+        "summary": "/services/search/jobs/1700000000.00001/summary",
+        "control": "/services/search/jobs/1700000000.00001/control"
+      },
+      "published": "2026-09-15T00:00:00.000+00:00",
+      "author": "admin",
+      "content": {
+        "canSummarize": false,
+        "cursorTime": "2026-09-15T00:00:00.000+00:00",
+        "defaultSaveTTL": "604800",
+        "defaultTTL": "600",
+        "delegate": "",
+        "diskUsage": 65536,
+        "dispatchState": "DONE",
+        "doneProgress": 1,
+        "dropCount": 0,
+        "earliestTime": "2026-09-15T00:00:00.000+00:00",
+        "eventAvailableCount": 0,
+        "eventCount": 0,
+        "eventFieldCount": 0,
+        "eventIsStreaming": true,
+        "eventIsTruncated": false,
+        "eventSearch": "",
+        "eventSorting": "none",
+        "isBatchModeSearch": false,
+        "isDone": true,
+        "isEventsPreviewEnabled": false,
+        "isFailed": false,
+        "isFinalized": false,
+        "isPaused": false,
+        "isPreviewEnabled": false,
+        "isRealTimeSearch": false,
+        "isRemoteTimeline": false,
+        "isSaved": false,
+        "isSavedSearch": false,
+        "isTimeCursored": true,
+        "isZombie": false,
+        "keywords": "",
+        "label": "",
+        "latestTime": "2026-09-15T00:00:00.000+00:00",
+        "normalizedSearch": "premakeresults count=5",
+        "numPreviews": 0,
+        "optimizedSearch": "| makeresults count=5",
+        "phase0": "premakeresults  count=5",
+        "phase1": "makeresults  count=5",
+        "pid": "1263952",
+        "priority": 5,
+        "provenance": "",
+        "remoteSearch": "premakeresults  count=5",
+        "reportSearch": "makeresults  count=5",
+        "resultCount": 5,
+        "resultIsStreaming": false,
+        "resultPreviewCount": 5,
+        "runDuration": 0.016,
+        "sampleRatio": "1",
+        "sampleSeed": "0",
+        "scanCount": 0,
+        "search": "makeresults count=5",
+        "searchCanBeEventType": false,
+        "searchEarliestTime": 1789464924,
+        "searchLatestTime": 1789468524,
+        "searchTotalBucketsCount": 0,
+        "searchTotalEliminatedBucketsCount": 0,
+        "sid": "1700000000.00001",
+        "statusBuckets": 0,
+        "ttl": 600,
+        "performance": {
+          "command.makeresults": {
+            "invocations": 4,
+            "input_count": 5,
+            "output_count": 5
+          },
+          "command.makeresults.execute_input": {
+            "invocations": 3,
+            "input_count": 5,
+            "output_count": 0
+          },
+          "command.makeresults.execute_output": {
+            "invocations": 1,
+            "input_count": 0,
+            "output_count": 5
+          },
+          "command.premakeresults": {
+            "invocations": 1,
+            "input_count": 0,
+            "output_count": 5
+          },
+          "dispatch.createdSearchResultInfrastructure": {
+            "invocations": 1
+          },
+          "dispatch.evaluate.makeresults": {
+            "invocations": 2
+          },
+          "dispatch.fetch.rcp.phase_0": {
+            "duration_secs": 0.001,
+            "invocations": 3
+          },
+          "dispatch.finalWriteToDisk": {
+            "duration_secs": 0.001,
+            "invocations": 1
+          },
+          "dispatch.localSearch": {
+            "invocations": 1
+          },
+          "dispatch.stream.local": {
+            "invocations": 1
+          },
+          "dispatch.writeStatus": {
+            "invocations": 3
+          },
+          "startup.configuration": {
+            "duration_secs": 0.013,
+            "invocations": 2
+          },
+          "startup.handoff": {
+            "duration_secs": 0.06,
+            "invocations": 2
+          }
+        },
+        "messages": [],
+        "request": {
+          "earliest_time": "-1h",
+          "exec_mode": "normal",
+          "latest_time": "now",
+          "search": "makeresults count=5"
+        },
+        "runtime": {
+          "auto_cancel": "0",
+          "auto_pause": "0"
+        },
+        "searchProviders": [
+          "splunk-dev-01"
+        ]
+      },
+      "acl": {
+        "perms": {
+          "read": [
+            "admin"
+          ],
+          "write": [
+            "admin"
+          ]
+        },
+        "owner": "admin",
+        "modifiable": true,
+        "sharing": "global",
+        "app": "search",
+        "can_write": true,
+        "ttl": "600"
+      }
+    }
+  ],
+  "paging": {
+    "total": 1,
+    "perPage": 0,
+    "offset": 0
+  }
+}

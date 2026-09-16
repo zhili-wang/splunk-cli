@@ -1,0 +1,31 @@
+/**
+ * TypeScript 配置（仅做类型检查，产物交给 esbuild / Vite）
+ *
+ * 关键一条：`noEmit: true`——tsconfig 不负责产出，
+ * 只负责把类型错误找出来。产物由 scripts/build.mjs 的 esbuild 生成。
+ *
+ * `noUncheckedIndexedAccess` 是这套配置里最关键的一条：索引访问返回 `T | undefined`，
+ * 逼着代码显式处理"取不到"的情况，而不是让它悄悄变成 `undefined` 往下传。
+ * 它与 `strict` 一起构成"可选值必须被收窄"的约束。
+ */
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["bin", "server", "test", "scripts/verify-live.ts", "vitest.config.ts"]
+}

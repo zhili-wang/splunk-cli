@@ -1,0 +1,67 @@
+{
+  "name": "splunk-cli",
+  "version": "0.1.0",
+  "description": "Read-only, agent-friendly CLI and TypeScript core for accessing Splunk logs via the official REST API.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "files": [
+    "bin/",
+    "server/",
+    "web/",
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "splunk-cli": "./bin/splunk-cli.mjs"
+  },
+  "scripts": {
+    "test": "vitest run && (cd web && vitest run)",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage && (cd web && vitest run --coverage) && node scripts/check-coverage.mjs",
+    "test:integration": "vitest run test/integration",
+    "verify:live": "tsx scripts/verify-live.ts",
+    "typecheck": "tsc --noEmit && tsc -p web/tsconfig.json --noEmit && tsc -p web/tsconfig.node.json --noEmit",
+    "build": "node scripts/build.mjs",
+    "pack": "node scripts/package.mjs",
+    "pack:verify": "node scripts/package.mjs --verify-reproducible",
+    "dev": "tsx bin/splunk-cli.ts",
+    "dev:web": "cd web && vite",
+    "bench": "node scripts/bench.mjs"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "compression": "^1.8.2",
+    "express": "^5.2.1",
+    "undici": "^8.10.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.5.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/supertest": "^7.2.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^5.0.1",
+    "autoprefixer": "^10.4.19",
+    "echarts": "^5.5.0",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.1",
+    "postcss": "^8.4.39",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "supertest": "^7.2.2",
+    "tailwindcss": "^3.4.7",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.0",
+    "vitest": "^5.0.1"
+  }
+}

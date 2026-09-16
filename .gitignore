@@ -1,0 +1,40 @@
+# Secrets and local configuration — never commit these.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Distribution directory: guides are committed, packages are build outputs.
+# INSTALL/USAGE/VERSION.md are tracked; the .tgz is not.
+splunk-cli/*.tgz
+splunk-cli/*.zip
+
+# Packaging staging tree (scripts/package.mjs assembles the distribution here).
+pack/
+
+# Versioned release archives.
+releases/
+
+# docs/ is the local scratch area (agent working notes) and is not committed.
+docs/*
+
+# Build artifacts -- never commit build output. `npm run build` regenerates both the
+# server bundle and the frontend under dist/.
+dist/
+
+# Dependencies (single root package.json). web/node_modules/ is kept ignored only as a safety net.
+node_modules/
+web/node_modules/
+
+# Test / tooling caches. `npm run test:coverage` writes coverage/ at the root and
+# web/coverage/ for the frontend.
+coverage/
+.superpowers
+.claude
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp

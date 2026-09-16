@@ -1,0 +1,162 @@
+{
+  "links": {},
+  "origin": "https://placeholder.invalid/services/search/jobs",
+  "updated": "2026-09-15T00:00:00.000+00:00",
+  "generator": {
+    "build": "a7f645ddaf91",
+    "version": "8.0.2"
+  },
+  "entry": [
+    {
+      "name": "search | tstats count",
+      "id": "https://placeholder.invalid/services/search/jobs/1700000000.00001",
+      "updated": "2026-09-15T00:00:00.000+00:00",
+      "links": {
+        "alternate": "/services/search/jobs/1700000000.00001",
+        "search_telemetry.json": "/services/search/jobs/1700000000.00001/search_telemetry.json",
+        "search.log": "/services/search/jobs/1700000000.00001/search.log",
+        "events": "/services/search/jobs/1700000000.00001/events",
+        "results": "/services/search/jobs/1700000000.00001/results",
+        "results_preview": "/services/search/jobs/1700000000.00001/results_preview",
+        "timeline": "/services/search/jobs/1700000000.00001/timeline",
+        "summary": "/services/search/jobs/1700000000.00001/summary",
+        "control": "/services/search/jobs/1700000000.00001/control"
+      },
+      "published": "2026-09-15T00:00:00.000+00:00",
+      "author": "admin",
+      "content": {
+        "canSummarize": false,
+        "cursorTime": "2026-09-15T00:00:00.000+00:00",
+        "defaultSaveTTL": "604800",
+        "defaultTTL": "600",
+        "delegate": "",
+        "diskUsage": 49152,
+        "dispatchState": "FAILED",
+        "doneProgress": 1,
+        "dropCount": 0,
+        "earliestTime": "2026-09-15T00:00:00.000+00:00",
+        "eventAvailableCount": 0,
+        "eventCount": 0,
+        "eventFieldCount": 0,
+        "eventIsStreaming": true,
+        "eventIsTruncated": false,
+        "eventSearch": "",
+        "eventSorting": "none",
+        "isBatchModeSearch": false,
+        "isDone": true,
+        "isEventsPreviewEnabled": false,
+        "isFailed": true,
+        "isFinalized": false,
+        "isPaused": false,
+        "isPreviewEnabled": false,
+        "isRealTimeSearch": false,
+        "isRemoteTimeline": false,
+        "isSaved": false,
+        "isSavedSearch": false,
+        "isTimeCursored": false,
+        "isZombie": false,
+        "keywords": "",
+        "label": "",
+        "latestTime": "2026-09-15T00:00:00.000+00:00",
+        "numPreviews": 0,
+        "optimizedSearch": "| search  | tstats count",
+        "phase0": "litsearch ",
+        "phase1": "tstats  count",
+        "pid": "1263952",
+        "priority": 5,
+        "provenance": "",
+        "remoteSearch": "litsearch ",
+        "reportSearch": "",
+        "resultCount": 0,
+        "resultIsStreaming": true,
+        "resultPreviewCount": 0,
+        "runDuration": 0.002,
+        "sampleRatio": "1",
+        "sampleSeed": "0",
+        "scanCount": 0,
+        "search": "search | tstats count",
+        "searchCanBeEventType": false,
+        "searchEarliestTime": 1789464925,
+        "searchLatestTime": 1789468525,
+        "searchTotalBucketsCount": 0,
+        "searchTotalEliminatedBucketsCount": 0,
+        "sid": "1700000000.00001",
+        "statusBuckets": 0,
+        "ttl": 600,
+        "performance": {
+          "command.search.expand_search": {
+            "invocations": 1
+          },
+          "command.search.parse_directives": {
+            "invocations": 1
+          },
+          "dispatch.check_disk_usage": {
+            "invocations": 1
+          },
+          "dispatch.evaluate.search": {
+            "duration_secs": 0.007,
+            "invocations": 1
+          },
+          "dispatch.evaluate.tstats": {
+            "invocations": 1
+          },
+          "dispatch.writeStatus": {
+            "invocations": 3
+          },
+          "startup.configuration": {
+            "duration_secs": 0.006,
+            "invocations": 1
+          },
+          "startup.handoff": {
+            "duration_secs": 0.002,
+            "invocations": 1
+          }
+        },
+        "messages": [
+          {
+            "type": "FATAL",
+            "text": "Error in 'tstats' command: This command must be the first command of a search."
+          },
+          {
+            "type": "ERROR",
+            "text": "Error in 'tstats' command: This command must be the first command of a search."
+          }
+        ],
+        "request": {
+          "earliest_time": "-1h",
+          "exec_mode": "normal",
+          "latest_time": "now",
+          "search": "search | tstats count"
+        },
+        "runtime": {
+          "auto_cancel": "0",
+          "auto_pause": "0"
+        },
+        "searchProviders": [
+          "splunk-dev-01"
+        ]
+      },
+      "acl": {
+        "perms": {
+          "read": [
+            "admin"
+          ],
+          "write": [
+            "admin"
+          ]
+        },
+        "owner": "admin",
+        "modifiable": true,
+        "sharing": "global",
+        "app": "search",
+        "can_write": true,
+        "ttl": "600"
+      }
+    }
+  ],
+  "paging": {
+    "total": 1,
+    "perPage": 0,
+    "offset": 0
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "links": {},
+  "origin": "https://placeholder.invalid/services/alerts/fired_alerts",
+  "updated": "2026-09-15T00:00:00.000+00:00",
+  "generator": {
+    "build": "a7f645ddaf91",
+    "version": "8.0.2"
+  },
+  "entry": [
+    {
+      "name": "-",
+      "id": "https://placeholder.invalid/servicesNS/admin/search/alerts/fired_alerts/-",
+      "updated": "2026-09-15T00:00:00.000+00:00",
+      "links": {
+        "alternate": "/servicesNS/admin/search/alerts/fired_alerts/-",
+        "list": "/servicesNS/admin/search/alerts/fired_alerts/-"
+      },
+      "author": "admin",
+      "acl": {
+        "app": "search",
+        "can_list": true,
+        "can_write": true,
+        "modifiable": false,
+        "owner": "admin",
+        "perms": {
+          "read": [
+            "admin"
+          ],
+          "write": [
+            "admin"
+          ]
+        },
+        "removable": false,
+        "sharing": "user"
+      },
+      "content": {
+        "eai:acl": null,
+        "triggered_alert_count": 0
+      }
+    }
+  ],
+  "paging": {
+    "total": 1,
+    "perPage": 2,
+    "offset": 0
+  },
+  "messages": []
+}

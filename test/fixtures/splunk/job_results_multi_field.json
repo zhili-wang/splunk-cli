@@ -1,0 +1,50 @@
+{
+  "preview": false,
+  "init_offset": 0,
+  "messages": [],
+  "fields": [
+    {
+      "name": "_time"
+    },
+    {
+      "name": "host",
+      "type": "str"
+    },
+    {
+      "name": "level",
+      "type": "str"
+    },
+    {
+      "name": "message",
+      "type": "str"
+    },
+    {
+      "name": "service",
+      "type": "str"
+    }
+  ],
+  "results": [
+    {
+      "_time": "2026-09-15T00:00:00.000+00:00",
+      "host": "api-01",
+      "level": "ERROR",
+      "message": "database timeout",
+      "service": "payment"
+    },
+    {
+      "_time": "2026-09-15T00:00:00.000+00:00",
+      "host": "api-01",
+      "level": "ERROR",
+      "message": "database timeout",
+      "service": "payment"
+    },
+    {
+      "_time": "2026-09-15T00:00:00.000+00:00",
+      "host": "api-01",
+      "level": "ERROR",
+      "message": "database timeout",
+      "service": "payment"
+    }
+  ],
+  "highlighted": {}
+}

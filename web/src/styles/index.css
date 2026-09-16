@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Dark is the default: the dashboard is a log tool and reads better against a
+   * dark surface. `[data-theme='light']` swaps the values — this block is the
+   * only place a theme is defined, and `tailwind.config.js` maps every palette
+   * entry onto these variables, so no component has to know which theme is on.
+   *
+   * The palette is stored as bare RGB triples because Tailwind needs to append
+   * an alpha channel (`bg-ink-950/90`, `border-accent/60`).
+   */
+  :root {
+    --ink-950: 8 9 12;
+    --ink-900: 13 16 20;
+    --ink-850: 18 22 28;
+    --ink-800: 24 29 37;
+    --ink-700: 35 42 53;
+    --ink-600: 50 59 73;
+
+    --signal-ok: 61 220 151;
+    --signal-warn: 255 179 71;
+    --signal-bad: 255 92 114;
+    --signal-info: 90 169 255;
+    --signal-muted: 107 118 136;
+
+    --accent: 124 92 255;
+    --accent-soft: 168 147 255;
+
+    --text-primary: #e8ecf3;
+    --radius-panel: 0.75rem;
+    --panel-shadow: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -12px rgb(0 0 0 / 0.8);
+
+    /* Form controls and scrollbars follow the theme as well. */
+    color-scheme: dark;
+  }
+
+  [data-theme='light'] {
+    --ink-950: 246 247 249;
+    --ink-900: 255 255 255;
+    --ink-850: 241 243 247;
+    --ink-800: 228 232 238;
+    --ink-700: 209 215 224;
+    --ink-600: 168 177 190;
+
+    /* Darkened so they still read as signals on a white surface. */
+    --signal-ok: 13 138 92;
+    --signal-warn: 176 104 0;
+    --signal-bad: 202 40 65;
+    --signal-info: 28 100 210;
+    --signal-muted: 92 103 118;
+
+    --accent: 104 66 245;
+    --accent-soft: 132 102 250;
+
+    --text-primary: #10151d;
+    /* A near-black glow reads as dirt on a light panel. */
+    --panel-shadow: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 6px 16px -10px rgb(16 21 29 / 0.35);
+
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-[color:var(--text-primary)] antialiased;
+    font-feature-settings: 'tnum' 1, 'cv02' 1;
+  }
+
+  /* Numbers in this dashboard are read as data, not prose. */
+  .tnum {
+    @apply font-mono tabular-nums;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-[var(--radius-panel)] border border-ink-700 bg-ink-900 shadow-panel;
+  }
+
+  .panel-header {
+    @apply flex items-baseline justify-between gap-3 border-b border-ink-800 px-4 py-3;
+  }
+
+  .panel-title {
+    @apply text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-signal-muted;
+  }
+}

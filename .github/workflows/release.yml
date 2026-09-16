@@ -1,0 +1,172 @@
+name: release
+
+# 构建并发布 npm 分发包（tgz + zip）。
+#
+# 这个工作流**只有 ubuntu 一个构建平台**：产物是纯 JavaScript bundle，
+# esbuild / Vite 的输出与平台无关，不需要 matrix 交叉编译，也不需要
+# per-platform runner。一个 runner 就够，这是纯 JS 交付形态的直接收益。
+#
+# 触发：
+#   * 推送 `v*` 标签
+#   * 从 Actions 页手动触发（workflow_dispatch）
+#
+# 产物保证见 scripts/package.mjs：归档里只有压缩后的单文件 bundle 与前端静态资源，
+# 没有 `server/**/*.ts` 源码、没有 source map、没有凭据，也没有构建链
+# （`scripts` / `devDependencies` 会被删掉）。
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # 单一根 package.json：前后端依赖、两份 tsconfig 与两份测试都在同一次 npm ci 后可用。
+      - name: Install
+        run: npm ci
+
+      # `npm run typecheck` 同时检查后端 tsconfig 与 web/ 的两份 tsconfig。
+      - name: Type check
+        run: npm run typecheck
+
+      # 一条命令产出后端 coverage/ 与前端 web/coverage/ 两份报告，并跑 Q10 分档门禁；
+      # 缺任一份报告都会被 scripts/check-coverage.mjs 判 MISSING。
+      - name: Tests with coverage and Q10 gate
+        run: npm run test:coverage
+
+  pack:
+    name: pack
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # 标签与 package.json 的版本必须一致，否则发布出去的包版本与标签对不上。
+      - name: Check tag matches package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag 与 package.json 的 $pkg 不一致"
+            exit 1
+          fi
+          echo "版本一致: $pkg"
+
+      # --verify-reproducible 会**完整打包两次（各自重新构建）**并比对 sha256。
+      # 它同时证明了 esbuild / Vite 的内容确定性与归档元数据的确定性。
+      - name: Build and pack (reproducibility verified)
+        run: npm run pack:verify
+
+      - name: Assert the archive contains no source or secrets
+        run: |
+          set -euo pipefail
+          tgz=splunk-cli/splunk-cli.tgz
+          listing="$(tar -tzf "$tgz")"
+          echo "$listing"
+          fail=0
+          # 只允许 .d.ts 形态的类型声明留存；可读实现一律不允许。
+          if echo "$listing" | grep -E '\.tsx?$' | grep -v '\.d\.ts$' ; then
+            echo "::error::归档里出现了可读源码"; fail=1
+          fi
+          for pattern in '\.map$' '(^|/)\.env' 'config\.env$' 'node_modules/'; do
+            if echo "$listing" | grep -E "$pattern"; then
+              echo "::error::归档里出现了 $pattern"; fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then exit 1; fi
+          echo "归档检查通过"
+
+      # 端到端：从 tgz 真装一次，跑命令，起面板并请求首页。
+      # 只检查"文件在不在"是不够的——这条步骤验证 package.json 的 bin 与依赖解析、
+      # 以及打包形态下前端目录能被 server 找到。
+      - name: Smoke test the installed package
+        run: |
+          set -euo pipefail
+          prefix="$RUNNER_TEMP/prefix"
+          npm install -g ./splunk-cli/splunk-cli.tgz --prefix "$prefix"
+          cli="$prefix/bin/splunk-cli"
+          test -x "$cli"
+          "$cli" --version
+          "$cli" limits --json | node -e '
+            let raw = ""
+            process.stdin.on("data", (chunk) => (raw += chunk))
+            process.stdin.on("end", () => {
+              const payload = JSON.parse(raw)
+              if (payload.success !== true) throw new Error("limits 未返回 success=true")
+              console.log("limits OK:", JSON.stringify(payload).slice(0, 120))
+            })
+          '
+
+          export SPLUNK_CONFIG_DIR="$RUNNER_TEMP/splunk-config"
+          export SPLUNK_HOST=127.0.0.1
+          export SPLUNK_PORT=1
+          export SPLUNK_VERIFY_SSL=false
+          "$cli" dashboard --port 8899 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o "$RUNNER_TEMP/index.html" http://127.0.0.1:8899/; then break; fi
+            sleep 0.5
+          done
+          grep -q 'id="root"' "$RUNNER_TEMP/index.html"
+          echo "面板首页由安装包内的前端产物提供"
+
+      - name: Upload distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: splunk-cli-dist
+          path: |
+            splunk-cli/splunk-cli.tgz
+            releases/*.zip
+          if-no-files-found: error
+
+  release:
+    name: publish release
+    needs: pack
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -l dist
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/splunk-cli.tgz
+            dist/*.zip
+          generate_release_notes: true

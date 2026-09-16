@@ -1,0 +1,7 @@
+[
+  {
+    "endpoint": "/services/search/jobs/1700000000.00001/messages",
+    "result": "SplunkQueryError",
+    "detail": "Splunk returned HTTP 404 for GET /services/search/jobs/1700000000.00001/messages: Unknown endpoint."
+  }
+]

@@ -1,0 +1,92 @@
+{
+  "links": {},
+  "origin": "https://placeholder.invalid/services/server/info",
+  "updated": "2026-09-15T00:00:00.000+00:00",
+  "generator": {
+    "build": "a7f645ddaf91",
+    "version": "8.0.2"
+  },
+  "entry": [
+    {
+      "name": "server-info",
+      "id": "https://placeholder.invalid/services/server/info/server-info",
+      "updated": "2026-09-15T00:00:00.000+00:00",
+      "links": {
+        "alternate": "/services/server/info/server-info",
+        "list": "/services/server/info/server-info"
+      },
+      "author": "admin",
+      "acl": {
+        "app": "",
+        "can_list": false,
+        "can_write": false,
+        "modifiable": false,
+        "owner": "admin",
+        "perms": {
+          "read": [
+            "admin"
+          ],
+          "write": []
+        },
+        "removable": false,
+        "sharing": "system"
+      },
+      "content": {
+        "activeLicenseGroup": "Enterprise",
+        "activeLicenseSubgroup": "Production",
+        "addOns": null,
+        "build": "a7f645ddaf91",
+        "cpu_arch": "x86_64",
+        "dfs_enabled": false,
+        "eai:acl": null,
+        "fips_mode": false,
+        "guid": "00000000-0000-4000-8000-000000000000",
+        "health_info": "green",
+        "health_version": 1,
+        "host": "splunk-dev-01",
+        "host_fqdn": "splunk-dev-01",
+        "host_resolved": "splunk-dev-01",
+        "isForwarding": false,
+        "isFree": false,
+        "isTrial": false,
+        "kvStoreStatus": "ready",
+        "licenseKeys": [
+          "6B7AD703356A487BDC513EE92B96A9B403C070EFAA30029C9784B0E240FA3101"
+        ],
+        "licenseSignature": "3e36640cd5025cf511d32d59abd0a550",
+        "licenseState": "OK",
+        "license_labels": [
+          "Splunk Enterprise"
+        ],
+        "master_guid": "00000000-0000-4000-8000-000000000000",
+        "master_uri": "self",
+        "max_users": 4294967295,
+        "mode": "normal",
+        "numberOfCores": 2,
+        "numberOfVirtualCores": 4,
+        "os_build": "#1 SMP Tue Mar 26 18:54:05 CST 2024",
+        "os_name": "Linux",
+        "os_name_extended": "Linux",
+        "os_version": "5.10.134-16.3.al8.x86_64",
+        "physicalMemoryMB": 15453,
+        "product_type": "enterprise",
+        "rtsearch_enabled": true,
+        "serverName": "splunk-dev-01",
+        "server_roles": [
+          "indexer",
+          "license_master",
+          "deployment_server"
+        ],
+        "startup_time": 1787911331,
+        "staticAssetId": "99ECDFCBA7092337F76AAB05FB68A4A2B976115619037270A9BF27A8B151D74E",
+        "version": "8.0.2"
+      }
+    }
+  ],
+  "paging": {
+    "total": 1,
+    "perPage": 30,
+    "offset": 0
+  },
+  "messages": []
+}
