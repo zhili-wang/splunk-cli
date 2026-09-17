@@ -72,15 +72,18 @@ describe('publishedDependencies', () => {
     expect(() => publishedDependencies({})).toThrow(/express/)
   })
 
-  it('真实的根 package.json 能裁出全部 external 依赖', () => {
-    // Arrange：这份清单与仓库的漂移（比如根里删了某个 external）会在这里暴露。
+  it('根 package.json 的 dependencies 恰好等于 external 清单', () => {
+    // Arrange：这条不变式是"构建期内联、运行期外链"这个设计的直接推论 ——
+    // 凡是会被打进产物的（react、echarts、commander、zod……）一律归 devDependencies，
+    // 只有真正要在目标机上解析的才留在 dependencies。它同时保证了
+    // `npm install --omit=dev` 之后仍能跑起 dist/ —— 因为那正是产物需要的全部。
     const rootPkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
 
     // Act
-    const published = publishedDependencies(rootPkg.dependencies)
+    const declared = Object.keys(rootPkg.dependencies).sort()
 
     // Assert
-    expect(Object.keys(published).sort()).toEqual([...EXTERNAL_DEPENDENCIES].sort())
+    expect(declared).toEqual([...EXTERNAL_DEPENDENCIES].sort())
   })
 
   it('清单本身没有重复项', () => {

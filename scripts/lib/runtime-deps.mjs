@@ -11,6 +11,11 @@
  *   - 漏声明一个 external，用户装完一跑就崩，而打包本机一切正常 —— 这个更难发现。
  *
  * 放在同一个文件里，这两种错位至少需要有人刻意复制一份清单才会发生。
+ *
+ * 由此还推出一条仓库级不变式：**根 `package.json` 的 `dependencies` 恰好等于这份清单**。
+ * 会被打进产物的（react、echarts、commander、zod……）一律归 `devDependencies` ——
+ * 前端那边一直是这么做的，后端这两个曾经不是，直到 `npm install -g` 的依赖树里
+ * 冒出一个永远不会被 import 的 `zod`。`test/runtime-deps.test.ts` 会把这条钉住。
  */
 
 /**
