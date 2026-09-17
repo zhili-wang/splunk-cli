@@ -5,7 +5,8 @@
  * 做什么：
  *   - `bin/splunk-cli.ts` → `dist/bin/splunk-cli.mjs`（单文件，内联我们自己的代码）；
  *   - `minify: true` + **不产出 source map**：压缩单文件解包后无法还原可读源码，
- *     起到源码保护作用（"只发编译产物、不发可读源码"）。
+ *     起到源码保护作用（"只发编译产物、不发可读源码"）；
+ *   - 剔除 zod 内联进来的 64 种语言包（见 `dropZodLocales`，占 bundle 的 46%）。
  *
  * 运行时依赖标记为 external，由目标机 `npm install` 按平台解析——"产物只带本项目代码，
  * 第三方依赖交给目标机安装"。
@@ -45,12 +46,61 @@ const ESBUILD_OPTS = {
   },
 }
 
+/**
+ * esbuild 插件：把 zod 的全语言包表换成一个空模块。
+ *
+ * 为什么要这么做：
+ *
+ *   zod 的 `core/index.js`、`classic/external.js` 里各有一行
+ *   `export * as locales from "../locales/index.js"`，而那个 barrel 逐个导入 64 种
+ *   语言的错误文案（希伯来语 9.6kb、俄语 7.2kb、泰米尔语 7.0kb……）。这是为了支持
+ *   `z.config(z.locales.zhCN)` 这种用法，本项目**一处都没用到**——错误信息是英文的
+ *   默认文案，写在 `core/errors.js` 里，与这个 barrel 无关。
+ *
+ *   带走它们要花 262kb（占 bundle 46%），而 esbuild 摇不掉：`export * as` 会立刻
+ *   构造命名空间对象，tree-shaking 看不见"没人读过它的属性"。所以只能换成空模块。
+ *
+ * 安全性：已逐命令比对过替换前后的输出（含 zod 校验失败路径），逐字节一致。
+ * 若将来要用 `z.locales.*`，这里必须同步改回。
+ *
+ * @returns 插件与命中计数。计数为 0 说明 zod 换了内部路径、这招已失效，调用方据此报错。
+ */
+function dropZodLocales() {
+  const stats = { hits: 0 }
+  const plugin = {
+    name: 'drop-zod-locales',
+    setup(build) {
+      build.onResolve({ filter: /locales\/index\.js$/ }, (args) => {
+        // filter 匹配的是**未解析的 import 字符串**（zod 写的是 `../locales/index.js`），
+        // 不是解析后的绝对路径，所以还要用 importer 确认确实来自 zod，避免误伤同名文件。
+        if (!/[\\/]zod[\\/]v4[\\/]/.test(args.importer)) return null
+        stats.hits += 1
+        return { path: 'zod-locales', namespace: 'zod-locales' }
+      })
+      build.onLoad({ filter: /.*/, namespace: 'zod-locales' }, () => ({
+        contents: 'export {}',
+        loader: 'js',
+      }))
+    },
+  }
+  return { plugin, stats }
+}
+
 async function bundleCli() {
+  const zod = dropZodLocales()
   await build({
     ...ESBUILD_OPTS,
+    plugins: [zod.plugin],
     entryPoints: [join(ROOT, 'bin', 'splunk-cli.ts')],
     outfile: join(DIST, 'bin', 'splunk-cli.mjs'),
   })
+  // 宁可构建失败，也不要悄悄把 260kb 语言包又塞回包里——体积回归是无声的。
+  if (zod.stats.hits === 0) {
+    throw new Error(
+      '未能剔除 zod 语言包：插件没有匹配到任何 locales barrel。' +
+        '多半是 zod 升级改了内部路径，请检查 node_modules/zod/v4/*/index.js 里的 locales 导入。',
+    )
+  }
 }
 
 /**
