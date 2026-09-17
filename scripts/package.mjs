@@ -13,7 +13,8 @@
  *   - staging 只从 `dist/` 取产物，**从不复制 `server/`、`bin/` 的 `.ts` 源码**
  *     ——源码已被内联压缩进单文件 bundle，解包后无法还原可读实现；
  *   - `sanitizePackageJson()` 删掉 `scripts` 与 `devDependencies`，
- *     安装包不携带构建链（也就不会把 `esbuild` / `vitest` 带给用户）；
+ *     安装包不携带构建链（也就不会把 `esbuild` / `vitest` 带给用户），
+ *     并把 `dependencies` 裁成 bundle 真正留在外面的那几个（见 `lib/runtime-deps.mjs`）；
  *   - `assertArchiveClean()` 在归档前逐条检查，源码 / source map / 凭据一旦混入
  *     就直接让打包失败，而不是"相信复制逻辑"。
  *
@@ -42,6 +43,7 @@ import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { ZIP_EPOCH_SECONDS, createTarGz, createZip } from './lib/archive.mjs'
+import { EXTERNAL_DEPENDENCIES, publishedDependencies } from './lib/runtime-deps.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -137,8 +139,11 @@ function copyToStaging() {
 /**
  * 精简 staging 里的 `package.json`：只保留运行必需字段。
  *
- * `bin` 必须保留（`npm install -g` 靠它注册可执行命令），`dependencies` 必须保留
- * （bundle 把 express / compression / undici 标为 external，由目标机 npm 解析）。
+ * `bin` 必须保留（`npm install -g` 靠它注册可执行命令），`dependencies` 必须保留，
+ * 但**要裁剪**：bundle 只把 `express` / `compression` / `undici` 标成 external，
+ * 其余运行时依赖（`commander`、`zod`）已经内联进去了。照抄根目录那份会让用户
+ * 白装一份永远不会被 `import` 的代码。裁剪依据是 `lib/runtime-deps.mjs` 的同一份清单，
+ * 也就是 esbuild 用的那份 —— 两边不会各说各话。
  *
  * 三个字段要特别处理：
  *   - `private` 删掉：它在仓库根的作用是**禁止误发**（根目录直接 `npm publish`
@@ -153,9 +158,13 @@ function sanitizePackageJson() {
   delete pkg.scripts
   delete pkg.devDependencies
   delete pkg.private
+  pkg.dependencies = publishedDependencies(pkg.dependencies ?? {})
   pkg.files = ['bin/', 'web/', 'README.md']
   writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8')
-  console.log(`[pack] package.json 已精简为: ${Object.keys(pkg).join(', ')}`)
+  console.log(
+    `[pack] package.json 已精简为: ${Object.keys(pkg).join(', ')}` +
+      `（dependencies 裁剪为 ${Object.keys(pkg.dependencies).join(' / ')}）`,
+  )
 }
 
 /**
@@ -191,6 +200,18 @@ function assertArchiveClean() {
     !pkg.files.includes('web/')
   ) {
     throw new Error(`package.json 的 files 未改写成 staging 布局: ${JSON.stringify(pkg.files)}`)
+  }
+
+  // 声明的依赖必须**恰好**是 bundle 留在外面的那些。多一个，用户白装；少一个，用户崩。
+  const declared = Object.keys(pkg.dependencies ?? {}).sort()
+  const expected = [...EXTERNAL_DEPENDENCIES].sort()
+  if (declared.join(',') !== expected.join(',')) {
+    throw new Error(
+      'package.json 的 dependencies 与 bundle 的外链依赖不一致:\n' +
+        `  声明了: ${declared.join(', ') || '(空)'}\n` +
+        `  应该是: ${expected.join(', ')}\n` +
+        '  内联进 bundle 的包不该出现在安装包里 —— 用户会白装一份永远不会被 import 的代码。',
+    )
   }
 
   const offenders = []

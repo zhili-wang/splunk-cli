@@ -8,8 +8,9 @@
  *     起到源码保护作用（"只发编译产物、不发可读源码"）；
  *   - 剔除 zod 内联进来的 64 种语言包（见 `dropZodLocales`，占 bundle 的 46%）。
  *
- * 运行时依赖标记为 external，由目标机 `npm install` 按平台解析——"产物只带本项目代码，
- * 第三方依赖交给目标机安装"。
+ * 运行时依赖标记为 external 的（见 `lib/runtime-deps.mjs`，那份清单同时决定安装包声明
+ * 哪些依赖），由目标机 `npm install` 按平台解析——"产物只带本项目代码，第三方依赖交给
+ * 目标机安装"。
  *
  * 本脚本自身保留 `.mjs`（构建工具，不是业务代码），用 node 直接执行。
  */
@@ -20,12 +21,11 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { EXTERNAL_DEPENDENCIES } from './lib/runtime-deps.mjs'
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const DIST = join(ROOT, 'dist')
-
-/** 运行时外部依赖，不打进 bundle（由目标机 npm install 解析）。 */
-const EXTERNAL = ['express', 'compression', 'undici']
 
 const ESBUILD_OPTS = {
   bundle: true,
@@ -35,7 +35,7 @@ const ESBUILD_OPTS = {
   format: 'esm',
   platform: 'node',
   target: 'node20',
-  external: EXTERNAL,
+  external: EXTERNAL_DEPENDENCIES,
   legalComments: 'none',
   banner: {
     // shebang 必须是文件第一行；createRequire 让内联进来的 CJS 依赖仍能 require。
