@@ -19,8 +19,9 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 
+import { useLocale } from '../hooks/useLocale'
 import { useTimelineFormat } from '../hooks/useTimelineFormat'
-import { formatBucketTime, formatCount } from '../lib/format'
+import { counted, formatBucketTime } from '../lib/format'
 import { MAX_TIMELINE_BUCKETS, endOfSpan, type ResolvedRange } from '../lib/timeRange'
 import { TIMELINE_FORMATS } from '../lib/timelineFormat'
 import type { TimelinePoint } from '../types/api'
@@ -49,6 +50,7 @@ interface Hover {
 
 export function EventTimeline({ points, span, brushed, onSelect, onClear }: Props): JSX.Element {
   const { format, setFormat } = useTimelineFormat()
+  const { locale, t } = useLocale()
   const [anchor, setAnchor] = useState<number | null>(null)
   const [cursor, setCursor] = useState<number | null>(null)
   const [hover, setHover] = useState<Hover | null>(null)
@@ -112,7 +114,10 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
           <div
             key={item.time}
             data-testid={`bucket-${index}`}
-            aria-label={`${formatBucketTime(item.time)}，${formatCount(item.count)} 个事件`}
+            aria-label={t('timeline.bucketAria', {
+              ...counted(item.count),
+              time: formatBucketTime(item.time, locale),
+            })}
             onMouseDown={() => {
               dragging.current = true
               setAnchor(index)
@@ -142,7 +147,9 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
         ))}
       </div>
     ),
-    [points, peak, format, from, to, track],
+    // `t` and `locale` are dependencies because each column's label is a
+    // translated, locale-formatted sentence, not just a number.
+    [points, peak, format, from, to, track, locale, t],
   )
 
   const hovered = hover === null ? undefined : points[hover.index]
@@ -150,11 +157,11 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
   return (
     <section className="panel">
       <header className="panel-header">
-        <h2 className="panel-title">时间线</h2>
+        <h2 className="panel-title">{t('timeline.title')}</h2>
         <div className="flex items-baseline gap-3">
           <div
             role="group"
-            aria-label="时间线格式"
+            aria-label={t('timeline.formatLabel')}
             className="flex items-center gap-0.5 rounded border border-ink-700 p-0.5"
           >
             {TIMELINE_FORMATS.map((item) => (
@@ -170,19 +177,24 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
                     : 'text-signal-muted hover:text-[color:var(--text-primary)]',
                 ].join(' ')}
               >
-                {item.label}
+                {t(item.labelKey)}
               </button>
             ))}
           </div>
 
+          {/* Three counts on one line. Each is its own message, and the " · "
+              between them is punctuation the component owns: one template would
+              have to pick which of the three counts the plural rules follow. */}
           <span className="tnum text-xs text-signal-muted">
-            每列 {span} · {formatCount(points.length)} 桶 · 共 {formatCount(total)} 个事件
+            {t('timeline.columnSpan', { span })}
+            {` · ${t('timeline.buckets', counted(points.length))}`}
+            {` · ${t('timeline.eventsTotal', counted(total))}`}
           </span>
 
           {points.length >= MAX_TIMELINE_BUCKETS ? (
             // A full result is not a covered window: the backend trims buckets
             // with `head`, so the tail of the range may be missing.
-            <span className="text-xs text-signal-warn">桶数已达上限，可能未覆盖整个窗口</span>
+            <span className="text-xs text-signal-warn">{t('timeline.capped')}</span>
           ) : null}
 
           {brushed ? (
@@ -191,21 +203,19 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
               onClick={onClear}
               className="rounded-md border border-ink-700 px-2 py-0.5 text-[0.7rem] text-signal-muted transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)]"
             >
-              清除选择
+              {t('timeline.clear')}
             </button>
           ) : null}
         </div>
       </header>
 
       {points.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-signal-muted">
-          该查询在这个时间范围内没有可绘制的时间桶。
-        </p>
+        <p className="px-4 py-4 text-sm text-signal-muted">{t('timeline.empty')}</p>
       ) : (
         <>
           <div
             role="group"
-            aria-label="事件时间线，拖动可选择时间范围"
+            aria-label={t('timeline.aria')}
             data-testid="timeline-bars"
             className="relative h-24 select-none px-2 pt-2"
             onMouseUp={() => {
@@ -256,7 +266,10 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
                   }}
                   className="tnum pointer-events-none absolute top-1 z-10 whitespace-nowrap rounded border border-ink-700 bg-ink-950/95 px-2 py-1 text-[0.7rem] text-[color:var(--text-primary)] shadow-panel"
                 >
-                  {formatBucketTime(hovered.time)} · {formatCount(hovered.count)} 个事件
+                  {t('timeline.hover', {
+                    ...counted(hovered.count),
+                    time: formatBucketTime(hovered.time, locale),
+                  })}
                 </div>
               ) : null}
             </div>
@@ -265,13 +278,13 @@ export function EventTimeline({ points, span, brushed, onSelect, onClear }: Prop
           <div className="flex items-baseline justify-between px-3 pb-2 text-[0.7rem] text-signal-muted">
             <span className="tnum">
               {from !== null && to !== null
-                ? `${formatBucketTime(points[from]?.time ?? '')} – ${formatBucketTime(points[to]?.time ?? '')}` +
-                  (selectedCount === null ? '' : ` · ${formatCount(selectedCount)} 桶`)
-                : '拖动柱子选择时间范围'}
+                ? `${formatBucketTime(points[from]?.time ?? '', locale)} – ${formatBucketTime(points[to]?.time ?? '', locale)}` +
+                  (selectedCount === null ? '' : t('timeline.selected', counted(selectedCount)))
+                : t('timeline.dragHint')}
             </span>
             <span className="tnum">
-              {formatBucketTime(points[0]?.time ?? '')} –{' '}
-              {formatBucketTime(points[points.length - 1]?.time ?? '')}
+              {formatBucketTime(points[0]?.time ?? '', locale)} –{' '}
+              {formatBucketTime(points[points.length - 1]?.time ?? '', locale)}
             </span>
           </div>
         </>

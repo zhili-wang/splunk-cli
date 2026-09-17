@@ -1,5 +1,7 @@
 import { type FormEvent } from 'react'
 
+import { useLocale } from '../hooks/useLocale'
+
 interface Props {
   query: string
   onQuery: (query: string) => void
@@ -8,6 +10,8 @@ interface Props {
 }
 
 export function SearchBar({ query, onQuery, onSubmit, loading }: Props): JSX.Element {
+  const { t } = useLocale()
+
   const submit = (event: FormEvent): void => {
     event.preventDefault()
     onSubmit()
@@ -16,7 +20,7 @@ export function SearchBar({ query, onQuery, onSubmit, loading }: Props): JSX.Ele
   return (
     <form onSubmit={submit} className="flex items-stretch gap-2">
       <input
-        aria-label="查询语句（SPL）"
+        aria-label={t('query.label')}
         value={query}
         onChange={(event) => onQuery(event.target.value)}
         placeholder="index=app level=ERROR"
@@ -28,7 +32,7 @@ export function SearchBar({ query, onQuery, onSubmit, loading }: Props): JSX.Ele
         disabled={loading || query.trim() === ''}
         className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {loading ? '查询中…' : '查询'}
+        {loading ? t('query.submitting') : t('query.submit')}
       </button>
     </form>
   )

@@ -26,6 +26,22 @@
       /* Blocked storage: the default in the markup stands. */
     }
   </script>
+  <script>
+    // The theme script's twin, and needed for the same reason: `lang` and the
+    // title live in this markup rather than in the React tree, so without this a
+    // reload in English would keep a Chinese tab until the bundle finished
+    // loading. Chinese is the default the markup already declares, so only the
+    // other locale needs an override. The key and title mirror src/lib/i18n.ts
+    // and src/locales/en-US.json.
+    try {
+      if (localStorage.getItem('splunk-cli:locale') === 'en-US') {
+        document.documentElement.lang = 'en-US'
+        document.title = 'Splunk Log Dashboard'
+      }
+    } catch (error) {
+      /* Blocked storage: the default in the markup stands. */
+    }
+  </script>
 </head>
 
 <body>

@@ -4,5 +4,39 @@
   "explorer.fileNesting.patterns": {
     "*.ts": "$(capture).test.ts, $(capture).test.tsx",
     "*.tsx": "$(capture).test.ts, $(capture).test.tsx"
-  }
+  },
+
+  // i18n Ally. Every key below is load-bearing — see the notes.
+  //
+  // `enabledFrameworks` is the one that is easy to miss. With no i18n library
+  // in package.json, auto-detection matches only the built-in `general`
+  // framework, and i18n Ally then discards a general-only result outright
+  // ("don't enable if only general framework is presented"). The extension
+  // disables itself, and nothing else here — no regex, no locales path — can
+  // bring it back. Naming `general` explicitly takes the other code path.
+  "i18n-ally.enabledFrameworks": ["general"],
+
+  // Relative to the workspace root.
+  "i18n-ally.localesPaths": ["web/src/locales"],
+
+  // Flat layout: locales/<locale>.json. Overrides the framework default, which
+  // would otherwise expect a <locale>/<namespace>.json directory.
+  "i18n-ally.pathMatcher": "{locale}.json",
+
+  // The catalogs are nested objects, not flat "a.b.c" keys.
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.sourceLanguage": "zh-CN",
+  "i18n-ally.displayLanguage": "zh-CN",
+
+  // The `general` framework ships an empty usageMatchRegex, so these are the
+  // only patterns that make keys resolvable. Setting them also replaces every
+  // framework regex, so no .vscode/i18n-ally-custom-framework.yml is needed.
+  // Pattern 1 covers the components (`t('dashboard.metrics.events')`).
+  // Pattern 2 covers the non-React modules, which call the translator directly
+  // (`translate(locale, 'api.httpError')`). Dynamic keys such as
+  // `t(LABELS[state])` carry no literal and are unmatched by design.
+  "i18n-ally.regex.usageMatch": [
+    "[^\\w\\d]t\\(\\s*['\"`]({key})['\"`]",
+    "[^\\w\\d]translate\\(\\s*[^,]+,\\s*['\"`]({key})['\"`]"
+  ]
 }

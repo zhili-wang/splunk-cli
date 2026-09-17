@@ -22,6 +22,23 @@ describe('ThemeToggle', () => {
     expect(screen.getByRole('button', { name: '切换到日间模式' })).toBeDefined()
   })
 
+  it('renders the translated mode in the button, never the message key', () => {
+    // The button names the mode a click gives you, so it opens on 日间 while the
+    // page is still dark. The accessible name is built from a separate,
+    // correctly translated string — asserting only that is what let a raw
+    // `theme.light` render in the button once already, so the visible text gets
+    // its own check here.
+    render(<ThemeToggle />)
+
+    expect(screen.getByRole('button').textContent).toContain('日间')
+    expect(screen.getByRole('button').textContent).not.toContain('theme.light')
+
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByRole('button').textContent).toContain('夜间')
+    expect(screen.getByRole('button').textContent).not.toContain('theme.dark')
+  })
+
   it('switches to light, applies it to the document and remembers it', () => {
     render(<ThemeToggle />)
 

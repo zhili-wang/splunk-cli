@@ -6,6 +6,7 @@
  * attach. The browser never holds a Splunk password or session token.
  */
 
+import { getLocale, translate } from '../lib/i18n'
 import type { ErrorDetail } from '../types/api'
 
 /** A failure the dashboard can render without guessing. */
@@ -45,7 +46,7 @@ function parseError(status: number, text: string): ApiError {
   const trimmed = text.trim().slice(0, 300)
   return new ApiError(
     'UnexpectedResponse',
-    trimmed === '' ? `服务器返回 HTTP ${status}` : trimmed,
+    trimmed === '' ? translate(getLocale(), 'api.httpError', { status }) : trimmed,
     status,
   )
 }
@@ -65,7 +66,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     return JSON.parse(text) as T
   } catch {
-    throw new ApiError('UnexpectedResponse', '服务器返回了格式错误的 JSON', response.status)
+    throw new ApiError(
+      'UnexpectedResponse',
+      translate(getLocale(), 'api.malformedJson'),
+      response.status,
+    )
   }
 }
 

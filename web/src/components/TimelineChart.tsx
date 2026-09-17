@@ -9,9 +9,10 @@
 
 import { useEffect, useRef } from 'react'
 
+import { useLocale } from '../hooks/useLocale'
 import { useTheme } from '../hooks/useTheme'
 import { echarts } from '../lib/echarts'
-import { formatBucketTime, formatCount } from '../lib/format'
+import { counted, formatBucketTime } from '../lib/format'
 import type { Theme } from '../lib/theme'
 import type { TimelinePoint } from '../types/api'
 
@@ -60,6 +61,7 @@ interface Props {
 export function TimelineChart({ points, span }: Props): JSX.Element {
   const host = useRef<HTMLDivElement>(null)
   const { theme } = useTheme()
+  const { locale, t } = useLocale()
 
   useEffect(() => {
     if (host.current === null) return
@@ -78,7 +80,7 @@ export function TimelineChart({ points, span }: Props): JSX.Element {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: points.map((point) => formatBucketTime(point.time)),
+        data: points.map((point) => formatBucketTime(point.time, locale)),
         axisLine: { lineStyle: { color: palette.axis } },
         axisLabel: { color: palette.label, fontSize: 11 },
       },
@@ -117,18 +119,25 @@ export function TimelineChart({ points, span }: Props): JSX.Element {
       observer.disconnect()
       chart.dispose()
     }
-    // Re-painting on a theme change is the point: the canvas cannot restyle itself.
-  }, [points, theme])
+    // Re-painting on a theme change is the point: the canvas cannot restyle
+    // itself. A language change counts too — the axis labels are formatted
+    // dates, and they would otherwise stay in the old language until a reload.
+  }, [points, theme, locale])
 
   return (
     <section className="panel">
       <header className="panel-header">
-        <h2 className="panel-title">事件时间线</h2>
+        <h2 className="panel-title">{t('timeline.chartTitle')}</h2>
         <span className="tnum text-xs text-signal-muted">
-          跨度 {span} · {formatCount(points.length)} 个时间桶
+          {t('timeline.chartSpan', { ...counted(points.length), span })}
         </span>
       </header>
-      <div ref={host} className="h-72 w-full px-2 pb-2" role="img" aria-label="事件时间线" />
+      <div
+        ref={host}
+        className="h-72 w-full px-2 pb-2"
+        role="img"
+        aria-label={t('timeline.chartAria')}
+      />
     </section>
   )
 }

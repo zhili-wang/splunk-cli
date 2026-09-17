@@ -45,7 +45,12 @@ function storage(): Storage {
 describe('TIMELINE_FORMATS', () => {
   it('offers bars first, because the default has to be the honest shape', () => {
     expect(TIMELINE_FORMATS.map((item) => item.id)).toEqual(['bar', 'line', 'area'])
-    expect(TIMELINE_FORMATS.map((item) => item.label)).toEqual(['柱状', '折线', '面积'])
+    // The labels are message keys now; the text lives in `src/locales`.
+    expect(TIMELINE_FORMATS.map((item) => item.labelKey)).toEqual([
+      'timeline.format.bar',
+      'timeline.format.line',
+      'timeline.format.area',
+    ])
     expect(DEFAULT_TIMELINE_FORMAT).toBe('bar')
   })
 })

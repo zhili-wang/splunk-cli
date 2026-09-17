@@ -46,7 +46,11 @@ describe('TIME_PRESETS', () => {
   })
 
   it('groups them under the two headings the picker renders', () => {
-    expect(TIME_PRESET_GROUPS.map((group) => group.title)).toEqual(['最近', '日历'])
+    // The headings are message keys now; the text lives in `src/locales`.
+    expect(TIME_PRESET_GROUPS.map((group) => group.titleKey)).toEqual([
+      'timeRange.groups.recent',
+      'timeRange.groups.calendar',
+    ])
   })
 
   it('keeps every recent preset inside the backend default ceiling', () => {

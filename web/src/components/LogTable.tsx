@@ -18,6 +18,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import { useFieldSelection } from '../hooks/useFieldSelection'
+import { useLocale } from '../hooks/useLocale'
 import { fieldCounts, fieldNames, highlight, orderedFields, queryTerms } from '../lib/fields'
 import { formatTimestamp } from '../lib/format'
 import { pageWindow, parsePageNumber } from '../lib/pagination'
@@ -98,6 +99,7 @@ function DetailRow({
 }
 
 export function LogTable({ rows, query = '' }: Props): JSX.Element {
+  const { locale, t } = useLocale()
   const fields = useMemo(() => orderedFields(rows, { includeInternal: true }), [rows])
   const counts = useMemo(
     () => new Map(fieldCounts(rows).map((entry) => [entry.name, entry.count])),
@@ -124,7 +126,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
   const visible = fields.filter(isVisible)
 
   if (rows.length === 0) {
-    return <p className="px-4 py-6 text-sm text-signal-muted">没有匹配到事件。</p>
+    return <p className="px-4 py-6 text-sm text-signal-muted">{t('table.empty')}</p>
   }
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize))
@@ -139,7 +141,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center gap-1.5 border-b border-ink-800 px-4 py-2">
         <span className="mr-1 text-[0.7rem] uppercase tracking-[0.14em] text-signal-muted">
-          字段
+          {t('table.fields')}
         </span>
         {fields.map((name) => {
           const on = visible.includes(name)
@@ -149,9 +151,18 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
               key={name}
               type="button"
               aria-pressed={on}
-              aria-label={`字段 ${name}`}
+              aria-label={t('table.fieldAria', { name })}
               onClick={() => toggle(name)}
-              title={`${name} · ${count}/${rows.length} 行有值`}
+              title={t('table.fieldTitle', {
+                // Ungrouped on purpose: the badge beside this title prints the
+                // same number the same way, and the i18n change did not set out
+                // to reformat either of them. No count either — the sentence's
+                // subject is the fraction, so the numerator must not drive its
+                // plural form.
+                value: count,
+                name,
+                total: rows.length,
+              })}
               className={[
                 'rounded-full border px-2 py-0.5 font-mono text-[0.7rem] transition-colors',
                 on
@@ -170,14 +181,14 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
             onClick={() => showAll(fields)}
             className="rounded-md border border-ink-700 px-2 py-0.5 text-[0.7rem] text-signal-muted transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)]"
           >
-            全部字段
+            {t('table.showAll')}
           </button>
           <button
             type="button"
             onClick={reset}
             className="rounded-md border border-ink-700 px-2 py-0.5 text-[0.7rem] text-signal-muted transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)]"
           >
-            恢复默认
+            {t('table.reset')}
           </button>
         </div>
       </div>
@@ -190,7 +201,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
             {start + 1}–{Math.min(start + pageSize, rows.length)} / {rows.length}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
-            <span>每页</span>
+            <span>{t('table.pageSize')}</span>
             {PAGE_SIZES.map((size) => (
               <button
                 key={size}
@@ -216,7 +227,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
               disabled={currentPage === 0}
               className="rounded-md border border-ink-700 px-2 py-0.5 transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)] disabled:opacity-40"
             >
-              上一页
+              {t('table.prev')}
             </button>
 
             {/* A search can run to 100 pages, so the ends plus the neighbours
@@ -230,7 +241,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
                 <button
                   key={slot}
                   type="button"
-                  aria-label={`第 ${slot + 1} 页`}
+                  aria-label={t('table.pageAria', { page: slot + 1 })}
                   aria-current={slot === currentPage ? 'page' : undefined}
                   onClick={() => setPage(slot)}
                   className={[
@@ -251,15 +262,15 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
               disabled={currentPage >= pageCount - 1}
               className="rounded-md border border-ink-700 px-2 py-0.5 transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)] disabled:opacity-40"
             >
-              下一页
+              {t('table.next')}
             </button>
 
             <label className="ml-1 flex items-center gap-1">
-              <span>跳至</span>
+              <span>{t('table.jumpTo')}</span>
               <input
                 type="text"
                 inputMode="numeric"
-                aria-label="跳至页码"
+                aria-label={t('table.jumpAria')}
                 value={jump}
                 placeholder={String(currentPage + 1)}
                 onChange={(event) => setJump(event.target.value)}
@@ -269,7 +280,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
                 }}
                 className="tnum w-12 rounded-md border border-ink-700 bg-ink-950 px-1.5 py-0.5 text-center outline-none transition-colors focus:border-accent"
               />
-              <span>页</span>
+              <span>{t('table.pageUnit')}</span>
             </label>
             <button
               type="button"
@@ -281,20 +292,20 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
               }}
               className="rounded-md border border-ink-700 px-2 py-0.5 transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)] disabled:opacity-40"
             >
-              跳转
+              {t('table.go')}
             </button>
           </div>
         </div>
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-signal-muted">
-          未选择任何字段。用上面的标签挑一个，或点「恢复默认」。
-        </p>
+        <p className="px-4 py-6 text-sm text-signal-muted">{t('table.noneSelected')}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">
-            <caption className="sr-only">事件列表，共 {rows.length} 行</caption>
+            <caption className="sr-only">
+              {t('table.caption', { count: rows.length, value: rows.length })}
+            </caption>
             <thead>
               <tr className="border-b border-ink-800">
                 <th
@@ -333,7 +344,10 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
                         <button
                           type="button"
                           aria-expanded={isOpen}
-                          aria-label={`${isOpen ? '收起' : '展开'}第 ${number + 1} 行`}
+                          aria-label={t('table.rowAria', {
+                            action: isOpen ? t('table.collapse') : t('table.expand'),
+                            row: number + 1,
+                          })}
                           className="tnum text-xs text-signal-muted transition-colors hover:text-[color:var(--text-primary)]"
                         >
                           {number + 1}
@@ -347,7 +361,7 @@ export function LogTable({ rows, query = '' }: Props): JSX.Element {
                               key={name}
                               className="tnum whitespace-nowrap px-3 py-1.5 text-signal-muted"
                             >
-                              {formatTimestamp(row[name])}
+                              {formatTimestamp(row[name], locale)}
                             </td>
                           )
                         }

@@ -1,0 +1,292 @@
+{
+  "app": {
+    "title": "Log Dashboard",
+    "documentTitle": "Splunk Log Dashboard",
+    "nav": {
+      "label": "Main navigation",
+      "overview": "Overview",
+      "search": "Search",
+      "alerts": "Alerts"
+    },
+    "footer": {
+      "readonly": "Read-only. Every query runs through the same service layer as the CLI.",
+      "version": "splunk-cli version"
+    }
+  },
+  "locale": {
+    "switch": "Switch to {name}",
+    "name": {
+      "zh": "中文",
+      "en": "English"
+    }
+  },
+  "common": {
+    "none": "(none)",
+    "unavailable": "Unavailable"
+  },
+  "format": {
+    "seconds": {
+      "one": "{value} second",
+      "other": "{value} seconds"
+    }
+  },
+  "api": {
+    "httpError": "The server returned HTTP {status}",
+    "malformedJson": "The server returned malformed JSON"
+  },
+  "connection": {
+    "checking": "Checking Splunk…",
+    "ok": "Connected",
+    "failed": "Not connected"
+  },
+  "theme": {
+    "switch": "Switch to {mode} mode",
+    "dark": "dark",
+    "light": "light"
+  },
+  "timeRange": {
+    "label": "Time range",
+    "groups": {
+      "recent": "Recent",
+      "calendar": "Calendar"
+    },
+    "presets": {
+      "m5": "5m",
+      "m15": "15m",
+      "m30": "30m",
+      "h1": "1h",
+      "h4": "4h",
+      "h12": "12h",
+      "h24": "24h",
+      "d7": "7d",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "thisWeek": "This week",
+      "lastWeek": "Previous week",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "thisYear": "This year",
+      "lastYear": "Last year"
+    },
+    "custom": "Custom",
+    "window": "Window {width}",
+    "windowUnknown": "Window width is evaluated by Splunk",
+    "mode": {
+      "label": "Custom time mode",
+      "relative": "Relative",
+      "absolute": "Absolute"
+    },
+    "relative": {
+      "last": "Last",
+      "amount": "Relative time amount",
+      "unit": "Relative time unit",
+      "before": "ago, until now"
+    },
+    "absolute": {
+      "start": "Start time",
+      "end": "End time",
+      "to": "to",
+      "now": "Now",
+      "setNow": "Set the end time to now",
+      "zone": "local time zone"
+    },
+    "units": {
+      "s": {
+        "one": "second",
+        "other": "seconds"
+      },
+      "m": {
+        "one": "minute",
+        "other": "minutes"
+      },
+      "h": {
+        "one": "hour",
+        "other": "hours"
+      },
+      "d": {
+        "one": "day",
+        "other": "days"
+      }
+    },
+    "duration": {
+      "s": {
+        "one": "{value} second",
+        "other": "{value} seconds"
+      },
+      "m": {
+        "one": "{value} minute",
+        "other": "{value} minutes"
+      },
+      "h": {
+        "one": "{value} hour",
+        "other": "{value} hours"
+      },
+      "d": {
+        "one": "{value} day",
+        "other": "{value} days"
+      }
+    }
+  },
+  "query": {
+    "label": "Search query (SPL)",
+    "submit": "Search",
+    "submitting": "Searching…",
+    "history": "Query history",
+    "historyList": "Query history",
+    "clear": "Clear",
+    "historyHint": "Queries you run are kept here",
+    "historyEmpty": "No queries yet.",
+    "deleteRecord": "Delete record {query}"
+  },
+  "dashboard": {
+    "empty": "Enter a query to begin. Queries you have run are kept in \"Query history\" above.",
+    "refresh": "Refresh",
+    "refreshing": "Loading…",
+    "partial": "Some views are unavailable — the panels below show only what Splunk actually returned.",
+    "loading": "Querying Splunk for the timeline and both breakdowns…",
+    "noEvents": {
+      "one": "This window contains {value} event. Widen the time range or change the query.",
+      "other": "This window contains {value} events. Widen the time range or change the query."
+    },
+    "metrics": {
+      "events": "Events",
+      "eventsHint": "in the selected window",
+      "services": "Services",
+      "servicesHint": "distinct count",
+      "hosts": "Hosts",
+      "hostsHint": "distinct count",
+      "buckets": "Buckets",
+      "bucketsHint": "time slices"
+    },
+    "byService": "Top services",
+    "byServiceEmpty": "No service breakdown available.",
+    "byHost": "Top hosts",
+    "byHostEmpty": "No host breakdown available."
+  },
+  "search": {
+    "empty": "Run a query to see raw events.",
+    "rows": {
+      "one": "{value} row",
+      "other": "{value} rows"
+    },
+    "truncated": " · truncated, narrow the range",
+    "export": "Export CSV",
+    "exportTitle": "Download the visible columns of the current page (no export request is sent to Splunk)"
+  },
+  "alerts": {
+    "loading": "Loading fired alerts…",
+    "noData": "No data.",
+    "title": "Fired alerts",
+    "summary": {
+      "one": "{value} alert · {source}",
+      "other": "{value} alerts · {source}"
+    },
+    "empty": "No alerts have fired.",
+    "readonly": "Read-only. Enabling, disabling, editing and deleting alerts are not implemented and are blocked at the endpoint allowlist."
+  },
+  "job": {
+    "label": "Job status",
+    "state": {
+      "failed": "Failed",
+      "done": "Done",
+      "running": "Running",
+      "runningPercent": "Running {percent}%"
+    },
+    "events": {
+      "one": "{value} event",
+      "other": "{value} events"
+    },
+    "window": "({earliest} to {latest})",
+    "windowUnknown": "Resolved window unknown",
+    "duration": "Took {duration}",
+    "scanned": {
+      "one": "Scanned {value} record",
+      "other": "Scanned {value} records"
+    },
+    "sampled": "Sampled 1:{ratio} (results are approximate)",
+    "details": "Job details",
+    "detail": {
+      "sid": "Search ID",
+      "dispatchState": "Dispatch state",
+      "requestedWindow": "Requested window",
+      "resolvedWindow": "Resolved window",
+      "resultCount": "Results",
+      "eventCount": "Events",
+      "scanCount": "Scanned",
+      "runDuration": "Run duration",
+      "sampling": "Event sampling",
+      "noSampling": "No sampling"
+    }
+  },
+  "timeline": {
+    "title": "Timeline",
+    "formatLabel": "Timeline format",
+    "format": {
+      "bar": "Bars",
+      "line": "Line",
+      "area": "Area"
+    },
+    "columnSpan": "Column {span}",
+    "buckets": {
+      "one": "{value} bucket",
+      "other": "{value} buckets"
+    },
+    "eventsTotal": {
+      "one": "{value} event in total",
+      "other": "{value} events in total"
+    },
+    "capped": "Bucket cap reached — the window may not be fully covered",
+    "clear": "Clear selection",
+    "empty": "This query has no buckets to draw in this time range.",
+    "aria": "Event timeline, drag to select a time range",
+    "bucketAria": {
+      "one": "{time}, {value} event",
+      "other": "{time}, {value} events"
+    },
+    "hover": {
+      "one": "{time} · {value} event",
+      "other": "{time} · {value} events"
+    },
+    "dragHint": "Drag across the bars to select a time range",
+    "selected": {
+      "one": " · {value} bucket",
+      "other": " · {value} buckets"
+    },
+    "chartTitle": "Event timeline",
+    "chartSpan": {
+      "one": "Span {span} · {value} time bucket",
+      "other": "Span {span} · {value} time buckets"
+    },
+    "chartAria": "Event timeline"
+  },
+  "bar": {
+    "groups": {
+      "one": "{value} group",
+      "other": "{value} groups"
+    }
+  },
+  "table": {
+    "fields": "Fields",
+    "fieldAria": "Field {name}",
+    "fieldTitle": "{name} · {value}/{total} rows have a value",
+    "showAll": "All fields",
+    "reset": "Reset",
+    "empty": "No matching events.",
+    "pageSize": "Per page",
+    "prev": "Previous",
+    "next": "Next",
+    "pageAria": "Page {page}",
+    "jumpTo": "Go to",
+    "jumpAria": "Go to page",
+    "pageUnit": "page",
+    "go": "Go",
+    "noneSelected": "No fields selected. Pick one from the tags above, or click \"Reset\".",
+    "caption": {
+      "one": "Event list, {value} row",
+      "other": "Event list, {value} rows"
+    },
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "rowAria": "{action} row {row}"
+  }
+}

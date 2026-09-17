@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 
 import { fetchHealth } from '../api/endpoints'
+import { useLocale } from '../hooks/useLocale'
+import type { MessageKey } from '../lib/i18n'
 import type { HealthReport } from '../types/api'
 
 type State = 'checking' | 'ok' | 'failed'
@@ -11,13 +13,15 @@ const STYLES: Record<State, string> = {
   failed: 'bg-signal-bad',
 }
 
-const LABELS: Record<State, string> = {
-  checking: '正在检查 Splunk…',
-  ok: '已连接',
-  failed: '未连接',
+/** The text lives in `src/locales`; the key is checked against the catalog. */
+const LABELS: Record<State, MessageKey> = {
+  checking: 'connection.checking',
+  ok: 'connection.ok',
+  failed: 'connection.failed',
 }
 
 export function ConnectionStatus(): JSX.Element {
+  const { t } = useLocale()
   const [report, setReport] = useState<HealthReport | null>(null)
   const [state, setState] = useState<State>('checking')
 
@@ -58,7 +62,7 @@ export function ConnectionStatus(): JSX.Element {
           state === 'checking' ? 'animate-pulse' : ''
         }`}
       />
-      <span className="text-signal-muted">{LABELS[state]}</span>
+      <span className="text-signal-muted">{t(LABELS[state])}</span>
       {state === 'ok' && report?.latency_ms !== undefined ? (
         <span className="tnum text-signal-muted/70">{report.latency_ms.toFixed(0)}ms</span>
       ) : null}

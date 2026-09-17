@@ -12,7 +12,9 @@
  * CLI is read-only, and job control is not a read.
  */
 
-import { formatCount, formatInstant, formatSeconds, UNKNOWN } from '../lib/format'
+import { useLocale } from '../hooks/useLocale'
+import { counted, formatCount, formatInstant, formatSeconds, UNKNOWN } from '../lib/format'
+import type { MessageKey, MessageParams } from '../lib/i18n'
 import type { JobInfo, TimeRange } from '../types/api'
 
 interface Props {
@@ -24,12 +26,22 @@ interface Props {
 }
 
 /** The state Splunk reports, said in one word. */
-function state(job: JobInfo): { label: string; icon: string; className: string } {
-  if (job.is_failed) return { label: '失败', icon: '✕', className: 'text-signal-bad' }
-  if (job.is_done) return { label: '完成', icon: '✓', className: 'text-signal-ok' }
+function state(job: JobInfo): {
+  labelKey: MessageKey
+  labelParams?: MessageParams
+  icon: string
+  className: string
+} {
+  if (job.is_failed) {
+    return { labelKey: 'job.state.failed', icon: '✕', className: 'text-signal-bad' }
+  }
+  if (job.is_done) {
+    return { labelKey: 'job.state.done', icon: '✓', className: 'text-signal-ok' }
+  }
   const percent = Math.round(job.done_progress * 100)
   return {
-    label: percent > 0 ? `进行中 ${percent}%` : '进行中',
+    labelKey: percent > 0 ? 'job.state.runningPercent' : 'job.state.running',
+    labelParams: { percent },
     icon: '●',
     className: 'text-signal-info',
   }
@@ -45,77 +57,88 @@ function Detail({ label, value }: { label: string; value: string }): JSX.Element
 }
 
 export function JobStatus({ job, totalAvailable, requested }: Props): JSX.Element {
+  const { t } = useLocale()
   const current = state(job)
   const events = totalAvailable ?? job.result_count
   const hasWindow = job.search_earliest_time !== undefined && job.search_latest_time !== undefined
-  const sampled = job.sample_ratio !== undefined && job.sample_ratio !== '' && job.sample_ratio !== '1'
+  // The ratio when Splunk really sampled, `null` when every event was counted —
+  // which is what both `1` and an absent value mean.
+  const sampleRatio =
+    job.sample_ratio === undefined || job.sample_ratio === '' || job.sample_ratio === '1'
+      ? null
+      : job.sample_ratio
 
   return (
-    <section className="panel px-4 py-2.5" aria-label="任务状态">
+    <section className="panel px-4 py-2.5" aria-label={t('job.label')}>
       <div
         data-testid="job-status-summary"
         className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs"
       >
         <span className={`flex items-center gap-1 ${current.className}`}>
           <span aria-hidden="true">{current.icon}</span>
-          {current.label}
+          {t(current.labelKey, current.labelParams)}
         </span>
 
-        <span className="tnum">{formatCount(events)} 个事件</span>
+        <span className="tnum">{t('job.events', counted(events))}</span>
 
         {hasWindow ? (
           <span className="tnum text-signal-muted">
-            （{formatInstant(job.search_earliest_time)} 至 {formatInstant(job.search_latest_time)}）
+            {t('job.window', {
+              earliest: formatInstant(job.search_earliest_time),
+              latest: formatInstant(job.search_latest_time),
+            })}
           </span>
         ) : (
           // Honest about the gap: without a resolved window we cannot claim which
           // instants the expression meant, so we say nothing rather than echo it.
-          <span className="text-signal-muted">实际时间窗未知</span>
+          <span className="text-signal-muted">{t('job.windowUnknown')}</span>
         )}
 
         {job.run_duration !== null ? (
-          <span className="tnum text-signal-muted">耗时 {formatSeconds(job.run_duration)}</span>
+          <span className="tnum text-signal-muted">
+            {t('job.duration', { duration: formatSeconds(job.run_duration) })}
+          </span>
         ) : null}
 
         {job.scan_count > 0 ? (
-          <span className="tnum text-signal-muted">扫描 {formatCount(job.scan_count)} 条</span>
+          <span className="tnum text-signal-muted">{t('job.scanned', counted(job.scan_count))}</span>
         ) : null}
 
-        {sampled ? (
+        {sampleRatio !== null ? (
           // Sampling makes every count an estimate. It has to be visible, or the
           // numbers below would read as exact.
-          <span className="text-signal-warn">采样 1:{job.sample_ratio}（结果为近似值）</span>
+          <span className="text-signal-warn">{t('job.sampled', { ratio: sampleRatio })}</span>
         ) : null}
       </div>
 
       <details className="mt-2 text-xs">
         <summary className="w-fit cursor-pointer select-none text-signal-muted transition-colors hover:text-[color:var(--text-primary)]">
-          任务详情
+          {t('job.details')}
         </summary>
         <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-          <Detail label="搜索 ID" value={job.sid === '' ? UNKNOWN : job.sid} />
-          <Detail label="调度状态" value={job.dispatch_state} />
+          <Detail label={t('job.detail.sid')} value={job.sid === '' ? UNKNOWN : job.sid} />
+          <Detail label={t('job.detail.dispatchState')} value={job.dispatch_state} />
           <Detail
-            label="请求时间窗"
+            label={t('job.detail.requestedWindow')}
             value={
               requested === undefined ? UNKNOWN : `${requested.earliest} → ${requested.latest}`
             }
           />
           <Detail
-            label="实际时间窗"
+            label={t('job.detail.resolvedWindow')}
             value={
               hasWindow
                 ? `${formatInstant(job.search_earliest_time)} → ${formatInstant(job.search_latest_time)}`
                 : UNKNOWN
             }
           />
-          <Detail label="结果条数" value={formatCount(job.result_count)} />
-          <Detail label="事件数" value={formatCount(job.event_count)} />
-          <Detail label="扫描条数" value={formatCount(job.scan_count)} />
-          <Detail label="运行时长" value={formatSeconds(job.run_duration)} />
+          <Detail label={t('job.detail.resultCount')} value={formatCount(job.result_count)} />
+          <Detail label={t('job.detail.eventCount')} value={formatCount(job.event_count)} />
+          <Detail label={t('job.detail.scanCount')} value={formatCount(job.scan_count)} />
+          <Detail label={t('job.detail.runDuration')} value={formatSeconds(job.run_duration)} />
           <Detail
-            label="事件采样"
-            value={sampled ? `1:${job.sample_ratio}` : '无采样'}
+            label={t('job.detail.sampling')}
+            value={sampleRatio === null ? t('job.detail.noSampling') : `1:${sampleRatio}`}
           />
         </dl>
       </details>

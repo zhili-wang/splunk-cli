@@ -7,6 +7,8 @@
  * accepts or promise a bound the frontend cannot enforce.
  */
 
+import { getLocale, translate, type Locale, type MessageKey } from './i18n'
+
 /**
  * Presets, grouped the way the operator thinks about them.
  *
@@ -19,38 +21,87 @@
  * "last 30 days" preset would fail every time it was clicked. The 日历 group is
  * written with snaps (`@mon` … `now`), which the backend hands to Splunk
  * unevaluated — that is the only reason month- and year-scoped windows can be
- * offered at all, and it is also why the picker says "窗口宽度由 Splunk 端求值"
- * instead of a number it cannot know. Anything else is reachable through the
- * custom editor, where a refusal is explained rather than pre-empted.
+ * offered at all, and it is also why the picker says the width is evaluated by
+ * Splunk rather than printing a number it cannot know. Anything else is
+ * reachable through the custom editor, where a refusal is explained rather than
+ * pre-empted.
+ *
+ * Each heading and preset carries a message key instead of its text. The text
+ * lives in `src/locales`; the key is typed against the Chinese catalog, so a
+ * heading naming a message nobody wrote is a compile error rather than a blank
+ * button.
  */
+
+/** One heading in the picker, and the presets filed under it. */
+interface PresetGroup {
+  readonly titleKey: MessageKey
+  readonly presets: readonly {
+    readonly id: string
+    readonly labelKey: MessageKey
+    readonly range: ResolvedRange
+  }[]
+}
+
 export const TIME_PRESET_GROUPS = [
   {
-    title: '最近',
+    titleKey: 'timeRange.groups.recent',
     presets: [
-      { id: '5m', label: '5 分钟', range: { earliest: '-5m', latest: 'now' } },
-      { id: '15m', label: '15 分钟', range: { earliest: '-15m', latest: 'now' } },
-      { id: '30m', label: '30 分钟', range: { earliest: '-30m', latest: 'now' } },
-      { id: '1h', label: '1 小时', range: { earliest: '-1h', latest: 'now' } },
-      { id: '4h', label: '4 小时', range: { earliest: '-4h', latest: 'now' } },
-      { id: '12h', label: '12 小时', range: { earliest: '-12h', latest: 'now' } },
-      { id: '24h', label: '24 小时', range: { earliest: '-24h', latest: 'now' } },
-      { id: '7d', label: '7 天', range: { earliest: '-7d', latest: 'now' } },
+      { id: '5m', labelKey: 'timeRange.presets.m5', range: { earliest: '-5m', latest: 'now' } },
+      { id: '15m', labelKey: 'timeRange.presets.m15', range: { earliest: '-15m', latest: 'now' } },
+      { id: '30m', labelKey: 'timeRange.presets.m30', range: { earliest: '-30m', latest: 'now' } },
+      { id: '1h', labelKey: 'timeRange.presets.h1', range: { earliest: '-1h', latest: 'now' } },
+      { id: '4h', labelKey: 'timeRange.presets.h4', range: { earliest: '-4h', latest: 'now' } },
+      { id: '12h', labelKey: 'timeRange.presets.h12', range: { earliest: '-12h', latest: 'now' } },
+      { id: '24h', labelKey: 'timeRange.presets.h24', range: { earliest: '-24h', latest: 'now' } },
+      { id: '7d', labelKey: 'timeRange.presets.d7', range: { earliest: '-7d', latest: 'now' } },
     ],
   },
   {
-    title: '日历',
+    titleKey: 'timeRange.groups.calendar',
     presets: [
-      { id: 'today', label: '今天', range: { earliest: '@d', latest: 'now' } },
-      { id: 'yesterday', label: '昨天', range: { earliest: '-1d@d', latest: '@d' } },
-      { id: 'this-week', label: '本周', range: { earliest: '@w', latest: 'now' } },
-      { id: 'last-week', label: '前一周', range: { earliest: '-7d@w0', latest: '@w0' } },
-      { id: 'this-month', label: '本月', range: { earliest: '@mon', latest: 'now' } },
-      { id: 'last-month', label: '上月', range: { earliest: '-1mon@mon', latest: '@mon' } },
-      { id: 'this-year', label: '今年', range: { earliest: '@y', latest: 'now' } },
-      { id: 'last-year', label: '上一年', range: { earliest: '-1y@y', latest: '@y' } },
+      {
+        id: 'today',
+        labelKey: 'timeRange.presets.today',
+        range: { earliest: '@d', latest: 'now' },
+      },
+      {
+        id: 'yesterday',
+        labelKey: 'timeRange.presets.yesterday',
+        range: { earliest: '-1d@d', latest: '@d' },
+      },
+      {
+        id: 'this-week',
+        labelKey: 'timeRange.presets.thisWeek',
+        range: { earliest: '@w', latest: 'now' },
+      },
+      {
+        id: 'last-week',
+        labelKey: 'timeRange.presets.lastWeek',
+        range: { earliest: '-7d@w0', latest: '@w0' },
+      },
+      {
+        id: 'this-month',
+        labelKey: 'timeRange.presets.thisMonth',
+        range: { earliest: '@mon', latest: 'now' },
+      },
+      {
+        id: 'last-month',
+        labelKey: 'timeRange.presets.lastMonth',
+        range: { earliest: '-1mon@mon', latest: '@mon' },
+      },
+      {
+        id: 'this-year',
+        labelKey: 'timeRange.presets.thisYear',
+        range: { earliest: '@y', latest: 'now' },
+      },
+      {
+        id: 'last-year',
+        labelKey: 'timeRange.presets.lastYear',
+        range: { earliest: '-1y@y', latest: '@y' },
+      },
     ],
   },
-] as const
+] as const satisfies readonly PresetGroup[]
 
 /** One entry in the picker: the literal pair, plus how it is labelled. */
 export type TimePreset = (typeof TIME_PRESET_GROUPS)[number]['presets'][number]
@@ -287,19 +338,21 @@ export function fromDatetimeLocal(value: string): string | null {
 }
 
 /** A window width an operator can read at a glance. */
-export function formatDuration(seconds: number): string {
-  const ladder: ReadonlyArray<[string, number]> = [
-    ['天', 86400],
-    ['小时', 3600],
-    ['分钟', 60],
-    ['秒', 1],
+export function formatDuration(seconds: number, locale: Locale = getLocale()): string {
+  const ladder: ReadonlyArray<[MessageKey, number]> = [
+    ['timeRange.duration.d', 86400],
+    ['timeRange.duration.h', 3600],
+    ['timeRange.duration.m', 60],
+    ['timeRange.duration.s', 1],
   ]
-  for (const [label, size] of ladder) {
+  for (const [key, size] of ladder) {
     if (seconds >= size) {
       const value = seconds / size
       const rounded = Number.isInteger(value) ? String(value) : value.toFixed(1)
-      return `${rounded} ${label}`
+      // `count` picks the plural form from the real width, `value` is what gets
+      // printed: 1.5 hours must not be pluralised off a rounded 2.
+      return translate(locale, key, { count: Number(rounded), value: rounded })
     }
   }
-  return `${seconds} 秒`
+  return translate(locale, 'timeRange.duration.s', { count: seconds, value: String(seconds) })
 }

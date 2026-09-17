@@ -1,0 +1,270 @@
+{
+  "app": {
+    "title": "日志面板",
+    "documentTitle": "Splunk 日志面板",
+    "nav": {
+      "label": "主导航",
+      "overview": "总览",
+      "search": "查询",
+      "alerts": "告警"
+    },
+    "footer": {
+      "readonly": "只读。所有查询都通过与 CLI 相同的服务层执行。",
+      "version": "splunk-cli 版本"
+    }
+  },
+  "locale": {
+    "switch": "切换到 {name}",
+    "name": {
+      "zh": "中文",
+      "en": "English"
+    }
+  },
+  "common": {
+    "none": "(无)",
+    "unavailable": "不可用"
+  },
+  "format": {
+    "seconds": {
+      "other": "{value} 秒"
+    }
+  },
+  "api": {
+    "httpError": "服务器返回 HTTP {status}",
+    "malformedJson": "服务器返回了格式错误的 JSON"
+  },
+  "connection": {
+    "checking": "正在检查 Splunk…",
+    "ok": "已连接",
+    "failed": "未连接"
+  },
+  "theme": {
+    "switch": "切换到{mode}模式",
+    "dark": "夜间",
+    "light": "日间"
+  },
+  "timeRange": {
+    "label": "时间范围",
+    "groups": {
+      "recent": "最近",
+      "calendar": "日历"
+    },
+    "presets": {
+      "m5": "5 分钟",
+      "m15": "15 分钟",
+      "m30": "30 分钟",
+      "h1": "1 小时",
+      "h4": "4 小时",
+      "h12": "12 小时",
+      "h24": "24 小时",
+      "d7": "7 天",
+      "today": "今天",
+      "yesterday": "昨天",
+      "thisWeek": "本周",
+      "lastWeek": "前一周",
+      "thisMonth": "本月",
+      "lastMonth": "上月",
+      "thisYear": "今年",
+      "lastYear": "上一年"
+    },
+    "custom": "自定义",
+    "window": "窗口 {width}",
+    "windowUnknown": "窗口宽度由 Splunk 端求值",
+    "mode": {
+      "label": "自定义时间模式",
+      "relative": "相对",
+      "absolute": "绝对"
+    },
+    "relative": {
+      "last": "最近",
+      "amount": "相对时间数值",
+      "unit": "相对时间单位",
+      "before": "前，至现在"
+    },
+    "absolute": {
+      "start": "起始时间",
+      "end": "结束时间",
+      "to": "至",
+      "now": "此刻",
+      "setNow": "将结束时间设为此刻",
+      "zone": "本机时区"
+    },
+    "units": {
+      "s": {
+        "other": "秒"
+      },
+      "m": {
+        "other": "分钟"
+      },
+      "h": {
+        "other": "小时"
+      },
+      "d": {
+        "other": "天"
+      }
+    },
+    "duration": {
+      "s": {
+        "other": "{value} 秒"
+      },
+      "m": {
+        "other": "{value} 分钟"
+      },
+      "h": {
+        "other": "{value} 小时"
+      },
+      "d": {
+        "other": "{value} 天"
+      }
+    }
+  },
+  "query": {
+    "label": "查询语句（SPL）",
+    "submit": "查询",
+    "submitting": "查询中…",
+    "history": "历史查询",
+    "historyList": "查询历史",
+    "clear": "清空",
+    "historyHint": "运行过的查询会记在这里",
+    "historyEmpty": "还没有查询记录。",
+    "deleteRecord": "删除记录 {query}"
+  },
+  "dashboard": {
+    "empty": "输入查询条件后开始。运行过的查询会记在上面的「历史查询」里。",
+    "refresh": "刷新",
+    "refreshing": "加载中…",
+    "partial": "部分视图不可用 —— 下方面板只展示 Splunk 实际返回的内容。",
+    "loading": "正在向 Splunk 查询时间线与两个维度拆解…",
+    "noEvents": {
+      "other": "该时间范围内有 {value} 个事件。请扩大时间范围或更换查询条件。"
+    },
+    "metrics": {
+      "events": "事件",
+      "eventsHint": "选定范围内",
+      "services": "服务",
+      "servicesHint": "去重计数",
+      "hosts": "主机",
+      "hostsHint": "去重计数",
+      "buckets": "时间桶",
+      "bucketsHint": "时间片"
+    },
+    "byService": "服务排行",
+    "byServiceEmpty": "暂无服务维度拆解数据。",
+    "byHost": "主机排行",
+    "byHostEmpty": "暂无主机维度拆解数据。"
+  },
+  "search": {
+    "empty": "执行查询以查看原始事件。",
+    "rows": {
+      "other": "{value} 行"
+    },
+    "truncated": " · 已截断，请缩小范围",
+    "export": "导出 CSV",
+    "exportTitle": "下载当前页的可见列（不向 Splunk 发起导出请求）"
+  },
+  "alerts": {
+    "loading": "正在加载已触发的告警…",
+    "noData": "无数据。",
+    "title": "已触发的告警",
+    "summary": {
+      "other": "{value} 条告警 · {source}"
+    },
+    "empty": "暂无告警触发。",
+    "readonly": "只读。启用、停用、编辑和删除告警均未实现，已在端点白名单处拦截。"
+  },
+  "job": {
+    "label": "任务状态",
+    "state": {
+      "failed": "失败",
+      "done": "完成",
+      "running": "进行中",
+      "runningPercent": "进行中 {percent}%"
+    },
+    "events": {
+      "other": "{value} 个事件"
+    },
+    "window": "（{earliest} 至 {latest}）",
+    "windowUnknown": "实际时间窗未知",
+    "duration": "耗时 {duration}",
+    "scanned": {
+      "other": "扫描 {value} 条"
+    },
+    "sampled": "采样 1:{ratio}（结果为近似值）",
+    "details": "任务详情",
+    "detail": {
+      "sid": "搜索 ID",
+      "dispatchState": "调度状态",
+      "requestedWindow": "请求时间窗",
+      "resolvedWindow": "实际时间窗",
+      "resultCount": "结果条数",
+      "eventCount": "事件数",
+      "scanCount": "扫描条数",
+      "runDuration": "运行时长",
+      "sampling": "事件采样",
+      "noSampling": "无采样"
+    }
+  },
+  "timeline": {
+    "title": "时间线",
+    "formatLabel": "时间线格式",
+    "format": {
+      "bar": "柱状",
+      "line": "折线",
+      "area": "面积"
+    },
+    "columnSpan": "每列 {span}",
+    "buckets": {
+      "other": "{value} 桶"
+    },
+    "eventsTotal": {
+      "other": "共 {value} 个事件"
+    },
+    "capped": "桶数已达上限，可能未覆盖整个窗口",
+    "clear": "清除选择",
+    "empty": "该查询在这个时间范围内没有可绘制的时间桶。",
+    "aria": "事件时间线，拖动可选择时间范围",
+    "bucketAria": {
+      "other": "{time}，{value} 个事件"
+    },
+    "hover": {
+      "other": "{time} · {value} 个事件"
+    },
+    "dragHint": "拖动柱子选择时间范围",
+    "selected": {
+      "other": " · {value} 桶"
+    },
+    "chartTitle": "事件时间线",
+    "chartSpan": {
+      "other": "跨度 {span} · {value} 个时间桶"
+    },
+    "chartAria": "事件时间线"
+  },
+  "bar": {
+    "groups": {
+      "other": "{value} 组"
+    }
+  },
+  "table": {
+    "fields": "字段",
+    "fieldAria": "字段 {name}",
+    "fieldTitle": "{name} · {value}/{total} 行有值",
+    "showAll": "全部字段",
+    "reset": "恢复默认",
+    "empty": "没有匹配到事件。",
+    "pageSize": "每页",
+    "prev": "上一页",
+    "next": "下一页",
+    "pageAria": "第 {page} 页",
+    "jumpTo": "跳至",
+    "jumpAria": "跳至页码",
+    "pageUnit": "页",
+    "go": "跳转",
+    "noneSelected": "未选择任何字段。用上面的标签挑一个，或点「恢复默认」。",
+    "caption": {
+      "other": "事件列表，共 {value} 行"
+    },
+    "expand": "展开",
+    "collapse": "收起",
+    "rowAria": "{action}第 {row} 行"
+  }
+}

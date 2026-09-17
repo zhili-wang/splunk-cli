@@ -13,6 +13,8 @@
 
 import { Fragment, useState } from 'react'
 
+import { useLocale } from '../hooks/useLocale'
+import type { MessageKey } from '../lib/i18n'
 import {
   TIME_PRESET_GROUPS,
   formatDuration,
@@ -37,14 +39,15 @@ interface Props {
 
 type CustomMode = 'relative' | 'absolute'
 
-const UNITS: ReadonlyArray<{ id: TimeUnit; label: string }> = [
+/** The text lives in `src/locales`; the key is checked against the catalog. */
+const UNITS: ReadonlyArray<{ id: TimeUnit; labelKey: MessageKey }> = [
   // Seconds are not decoration: swapping back from an absolute window can land
   // on a width with no larger exact unit (30m 2.7s -> `-1802s`), and a unit the
   // select does not offer would display as the wrong one.
-  { id: 's', label: '秒' },
-  { id: 'm', label: '分钟' },
-  { id: 'h', label: '小时' },
-  { id: 'd', label: '天' },
+  { id: 's', labelKey: 'timeRange.units.s' },
+  { id: 'm', labelKey: 'timeRange.units.m' },
+  { id: 'h', labelKey: 'timeRange.units.h' },
+  { id: 'd', labelKey: 'timeRange.units.d' },
 ]
 
 const FIELD_CLASS =
@@ -60,6 +63,7 @@ function presetClass(active: boolean): string {
 }
 
 export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props): JSX.Element {
+  const { t } = useLocale()
   // Only the amount box needs a draft: it has to be clearable while typing, and
   // an empty amount is not a window anyone can search.
   const [draft, setDraft] = useState<string | null>(null)
@@ -102,15 +106,15 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
       <div className="flex flex-wrap items-center gap-2">
         <div
           role="group"
-          aria-label="时间范围"
+          aria-label={t('timeRange.label')}
           className="flex flex-wrap items-center gap-x-1 gap-y-1 rounded-md border border-ink-700 bg-ink-900 p-1"
         >
           {TIME_PRESET_GROUPS.map((group, index) => (
-            <Fragment key={group.title}>
+            <Fragment key={group.titleKey}>
               {index > 0 ? (
                 <span aria-hidden="true" className="mx-1 h-4 w-px bg-ink-700" />
               ) : null}
-              <span className="px-1 text-[0.7rem] text-signal-muted">{group.title}</span>
+              <span className="px-1 text-[0.7rem] text-signal-muted">{t(group.titleKey)}</span>
               {group.presets.map((item) => (
                 <button
                   key={item.id}
@@ -119,7 +123,7 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
                   onClick={() => onPreset(item.id)}
                   className={presetClass(preset === item.id)}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               ))}
             </Fragment>
@@ -132,16 +136,18 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
             onClick={() => onPreset('custom')}
             className={presetClass(preset === 'custom')}
           >
-            自定义
+            {t('timeRange.custom')}
           </button>
         </div>
 
         {width !== null ? (
-          <span className="tnum text-xs text-signal-muted">窗口 {formatDuration(width)}</span>
+          <span className="tnum text-xs text-signal-muted">
+            {t('timeRange.window', { width: formatDuration(width) })}
+          </span>
         ) : (
           // Honest about the one case the browser cannot measure: a literal only
           // Splunk can evaluate, such as a snap-to-day expression.
-          <span className="text-xs text-signal-warn">窗口宽度由 Splunk 端求值</span>
+          <span className="text-xs text-signal-warn">{t('timeRange.windowUnknown')}</span>
         )}
       </div>
 
@@ -149,7 +155,7 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-ink-700 bg-ink-900 px-2 py-1.5">
           <div
             role="group"
-            aria-label="自定义时间模式"
+            aria-label={t('timeRange.mode.label')}
             className="flex items-center gap-0.5 rounded border border-ink-700 p-0.5"
           >
             <button
@@ -163,7 +169,7 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
                   : 'text-signal-muted hover:text-[color:var(--text-primary)]',
               ].join(' ')}
             >
-              相对
+              {t('timeRange.mode.relative')}
             </button>
             <button
               type="button"
@@ -176,17 +182,17 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
                   : 'text-signal-muted hover:text-[color:var(--text-primary)]',
               ].join(' ')}
             >
-              绝对
+              {t('timeRange.mode.absolute')}
             </button>
           </div>
 
           {mode === 'relative' ? (
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-signal-muted">最近</span>
+              <span className="text-signal-muted">{t('timeRange.relative.last')}</span>
               <input
                 type="number"
                 min={1}
-                aria-label="相对时间数值"
+                aria-label={t('timeRange.relative.amount')}
                 value={amountText}
                 // Committed on blur or Enter rather than on every keystroke:
                 // typing "30" would otherwise fire a search for "-3m" first.
@@ -203,7 +209,7 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
                 className={`${FIELD_CLASS} w-16`}
               />
               <select
-                aria-label="相对时间单位"
+                aria-label={t('timeRange.relative.unit')}
                 value={unit}
                 onChange={(event) => {
                   setDraft(null)
@@ -216,18 +222,18 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
               >
                 {UNITS.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.label}
+                    {t(item.labelKey)}
                   </option>
                 ))}
               </select>
-              <span className="text-signal-muted">前，至现在</span>
+              <span className="text-signal-muted">{t('timeRange.relative.before')}</span>
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               <input
                 type="datetime-local"
                 step={1}
-                aria-label="起始时间"
+                aria-label={t('timeRange.absolute.start')}
                 value={toDatetimeLocal(custom.earliest)}
                 onChange={(event) => {
                   const iso = fromDatetimeLocal(event.target.value)
@@ -235,11 +241,11 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
                 }}
                 className={FIELD_CLASS}
               />
-              <span className="text-signal-muted">至</span>
+              <span className="text-signal-muted">{t('timeRange.absolute.to')}</span>
               <input
                 type="datetime-local"
                 step={1}
-                aria-label="结束时间"
+                aria-label={t('timeRange.absolute.end')}
                 value={toDatetimeLocal(custom.latest)}
                 onChange={(event) => {
                   const iso = fromDatetimeLocal(event.target.value)
@@ -249,13 +255,13 @@ export function TimeRangeSelector({ preset, custom, onPreset, onCustom }: Props)
               />
               <button
                 type="button"
-                aria-label="将结束时间设为此刻"
+                aria-label={t('timeRange.absolute.setNow')}
                 onClick={() => onCustom({ ...custom, latest: new Date().toISOString() })}
                 className="rounded border border-ink-700 px-2 py-1 text-xs text-signal-muted transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)]"
               >
-                此刻
+                {t('timeRange.absolute.now')}
               </button>
-              <span className="text-signal-muted">本机时区</span>
+              <span className="text-signal-muted">{t('timeRange.absolute.zone')}</span>
             </div>
           )}
 

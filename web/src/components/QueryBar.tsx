@@ -8,6 +8,7 @@
 
 import { useState } from 'react'
 
+import { useLocale } from '../hooks/useLocale'
 import { useQueryHistory } from '../hooks/useQueryHistory'
 import { SearchBar } from './SearchBar'
 
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function QueryBar({ query, onQuery, onSubmit, loading }: Props): JSX.Element {
+  const { t } = useLocale()
   const { history, remember, forget, clear } = useQueryHistory()
   const [open, setOpen] = useState(false)
 
@@ -42,7 +44,8 @@ export function QueryBar({ query, onQuery, onSubmit, loading }: Props): JSX.Elem
           onClick={() => setOpen((value) => !value)}
           className="rounded-md border border-ink-700 px-2 py-0.5 transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)]"
         >
-          历史查询{history.length > 0 ? ` (${history.length})` : ''}
+          {t('query.history')}
+          {history.length > 0 ? ` (${history.length})` : ''}
         </button>
 
         {open && history.length > 0 ? (
@@ -51,18 +54,18 @@ export function QueryBar({ query, onQuery, onSubmit, loading }: Props): JSX.Elem
             onClick={clear}
             className="rounded-md border border-ink-700 px-2 py-0.5 transition-colors hover:border-signal-bad hover:text-signal-bad"
           >
-            清空
+            {t('query.clear')}
           </button>
         ) : null}
 
-        {!open ? <span>运行过的查询会记在这里</span> : null}
+        {!open ? <span>{t('query.historyHint')}</span> : null}
       </div>
 
       {open ? (
         history.length === 0 ? (
-          <p className="text-xs text-signal-muted">还没有查询记录。</p>
+          <p className="text-xs text-signal-muted">{t('query.historyEmpty')}</p>
         ) : (
-          <ul aria-label="查询历史" className="divide-y divide-ink-800 rounded-md border border-ink-700 bg-ink-900">
+          <ul aria-label={t('query.historyList')} className="divide-y divide-ink-800 rounded-md border border-ink-700 bg-ink-900">
             {history.map((item) => (
               <li key={item} className="flex items-center gap-2 px-2 py-1">
                 <button
@@ -75,7 +78,7 @@ export function QueryBar({ query, onQuery, onSubmit, loading }: Props): JSX.Elem
                 </button>
                 <button
                   type="button"
-                  aria-label={`删除记录 ${item}`}
+                  aria-label={t('query.deleteRecord', { query: item })}
                   onClick={() => forget(item)}
                   className="rounded px-1.5 text-sm leading-none text-signal-muted transition-colors hover:text-signal-bad"
                 >

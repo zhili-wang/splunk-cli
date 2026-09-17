@@ -1,4 +1,5 @@
-import { formatCount, formatStatKey } from '../lib/format'
+import { useLocale } from '../hooks/useLocale'
+import { counted, formatCount, formatStatKey } from '../lib/format'
 import type { StatRow } from '../types/api'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 /** A ranked bar list. Read from a table, not a chart: the names matter more
  * than the bars, and a table is what makes them selectable and copyable. */
 export function BarPanel({ title, rows, emptyLabel }: Props): JSX.Element {
+  const { t } = useLocale()
   const top = rows.slice(0, 12)
   const peak = top.reduce((max, row) => Math.max(max, row.count), 0)
 
@@ -17,7 +19,9 @@ export function BarPanel({ title, rows, emptyLabel }: Props): JSX.Element {
     <section className="panel">
       <header className="panel-header">
         <h2 className="panel-title">{title}</h2>
-        <span className="tnum text-xs text-signal-muted">{formatCount(rows.length)} 组</span>
+        <span className="tnum text-xs text-signal-muted">
+          {t('bar.groups', counted(rows.length))}
+        </span>
       </header>
 
       {top.length === 0 ? (

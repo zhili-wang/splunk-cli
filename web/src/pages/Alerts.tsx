@@ -1,27 +1,29 @@
 import { fetchAlerts } from '../api/endpoints'
 import { ErrorNote } from '../components/ErrorNote'
 import { useAsync } from '../hooks/useAsync'
-import { formatCount } from '../lib/format'
+import { useLocale } from '../hooks/useLocale'
+import { counted } from '../lib/format'
 
 export function Alerts(): JSX.Element {
+  const { t } = useLocale()
   const { data, error, loading } = useAsync(() => fetchAlerts(false), [])
 
   if (error !== null) return <ErrorNote error={error} />
-  if (loading) return <p className="text-sm text-signal-muted">正在加载已触发的告警…</p>
-  if (data === null) return <p className="text-sm text-signal-muted">无数据。</p>
+  if (loading) return <p className="text-sm text-signal-muted">{t('alerts.loading')}</p>
+  if (data === null) return <p className="text-sm text-signal-muted">{t('alerts.noData')}</p>
 
   return (
     <div className="flex flex-col gap-4">
       <section className="panel">
         <header className="panel-header">
-          <h2 className="panel-title">已触发的告警</h2>
+          <h2 className="panel-title">{t('alerts.title')}</h2>
           <span className="tnum text-xs text-signal-muted">
-            {formatCount(data.count)} 条告警 · {data.source}
+            {t('alerts.summary', { ...counted(data.count), source: data.source })}
           </span>
         </header>
 
         {data.alerts.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-signal-muted">暂无告警触发。</p>
+          <p className="px-4 py-6 text-sm text-signal-muted">{t('alerts.empty')}</p>
         ) : (
           <ul className="divide-y divide-ink-800">
             {data.alerts.map((alert, index) => (
@@ -37,9 +39,7 @@ export function Alerts(): JSX.Element {
         ) : null}
       </section>
 
-      <p className="text-xs text-signal-muted">
-        只读。启用、停用、编辑和删除告警均未实现，已在端点白名单处拦截。
-      </p>
+      <p className="text-xs text-signal-muted">{t('alerts.readonly')}</p>
     </div>
   )
 }

@@ -11,17 +11,25 @@
  * property of any one query.
  */
 
+import type { MessageKey } from './i18n'
+
 /** The shapes the timeline can take. */
 export type TimelineFormat = 'bar' | 'line' | 'area'
 
 /** Namespaced so it cannot collide with anything else on the origin. */
 export const TIMELINE_FORMAT_KEY = 'splunk-cli:timeline-format'
 
-/** Offered in this order; the first is the default. */
-export const TIMELINE_FORMATS: ReadonlyArray<{ id: TimelineFormat; label: string }> = [
-  { id: 'bar', label: '柱状' },
-  { id: 'line', label: '折线' },
-  { id: 'area', label: '面积' },
+/**
+ * Offered in this order; the first is the default.
+ *
+ * Each entry carries a message key rather than its text, which lives in
+ * `src/locales`. The key is typed against the Chinese catalog, so a format whose
+ * label nobody wrote fails to compile.
+ */
+export const TIMELINE_FORMATS: ReadonlyArray<{ id: TimelineFormat; labelKey: MessageKey }> = [
+  { id: 'bar', labelKey: 'timeline.format.bar' },
+  { id: 'line', labelKey: 'timeline.format.line' },
+  { id: 'area', labelKey: 'timeline.format.area' },
 ]
 
 export const DEFAULT_TIMELINE_FORMAT: TimelineFormat = 'bar'

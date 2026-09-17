@@ -9,10 +9,11 @@ import { QueryBar } from '../components/QueryBar'
 import { TimeRangeSelector } from '../components/TimeRangeSelector'
 import { useAsync } from '../hooks/useAsync'
 import { useFieldSelection } from '../hooks/useFieldSelection'
+import { useLocale } from '../hooks/useLocale'
 import { csvFileName, downloadCsv, toCsv } from '../lib/csv'
 import { orderedFields } from '../lib/fields'
 import { isFieldVisible } from '../lib/fieldSelection'
-import { formatCount } from '../lib/format'
+import { counted } from '../lib/format'
 import {
   DEFAULT_CUSTOM,
   editableRange,
@@ -23,6 +24,7 @@ import {
 } from '../lib/timeRange'
 
 export function Search(): JSX.Element {
+  const { t } = useLocale()
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
   const [preset, setPreset] = useState<PresetId>('1h')
@@ -87,7 +89,7 @@ export function Search(): JSX.Element {
       {error !== null ? <ErrorNote error={error} /> : null}
 
       {submitted === '' ? (
-        <p className="text-sm text-signal-muted">执行查询以查看原始事件。</p>
+        <p className="text-sm text-signal-muted">{t('search.empty')}</p>
       ) : null}
 
       {data !== null && data.success && data.job !== undefined ? (
@@ -117,22 +119,22 @@ export function Search(): JSX.Element {
       {data !== null && data.success ? (
         <section className="panel">
           <header className="panel-header">
-            <h2 className="panel-title">事件</h2>
+            <h2 className="panel-title">{t('dashboard.metrics.events')}</h2>
             <div className="flex items-baseline gap-3">
               <span className="tnum text-xs text-signal-muted">
-                {formatCount(data.count)} 行
-                {data.truncated ? ' · 已截断，请缩小范围' : ''}
+                {t('search.rows', counted(data.count))}
+                {data.truncated ? t('search.truncated') : ''}
               </span>
               <button
                 type="button"
                 disabled={rows.length === 0}
                 // Not Splunk's export endpoint — that one is forbidden. This
                 // writes the rows already on screen, and the title says so.
-                title="下载当前页的可见列（不向 Splunk 发起导出请求）"
+                title={t('search.exportTitle')}
                 onClick={() => downloadCsv(csvFileName(), toCsv(rows, exportColumns))}
                 className="rounded-md border border-ink-700 px-2 py-0.5 text-[0.7rem] text-signal-muted transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)] disabled:opacity-40"
               >
-                导出 CSV
+                {t('search.export')}
               </button>
             </div>
           </header>

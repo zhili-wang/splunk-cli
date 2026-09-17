@@ -8,7 +8,8 @@ import { QueryBar } from '../components/QueryBar'
 import { TimeRangeSelector } from '../components/TimeRangeSelector'
 import { TimelineChart } from '../components/TimelineChart'
 import { useAsync } from '../hooks/useAsync'
-import { formatCount } from '../lib/format'
+import { useLocale } from '../hooks/useLocale'
+import { counted } from '../lib/format'
 import {
   DEFAULT_CUSTOM,
   editableRange,
@@ -18,6 +19,7 @@ import {
 } from '../lib/timeRange'
 
 export function Dashboard(): JSX.Element {
+  const { t } = useLocale()
   // Empty on purpose: guessing a query for the operator means showing numbers
   // for something they never asked about. The history remembers what they run.
   const [query, setQuery] = useState('')
@@ -58,7 +60,7 @@ export function Dashboard(): JSX.Element {
             disabled={loading || submitted === ''}
             className="rounded-md border border-ink-700 px-3 py-1.5 text-xs text-signal-muted transition-colors hover:border-ink-600 hover:text-[color:var(--text-primary)] disabled:opacity-40"
           >
-            {loading ? '加载中…' : '刷新'}
+            {loading ? t('dashboard.refreshing') : t('dashboard.refresh')}
           </button>
         </div>
         <QueryBar
@@ -70,9 +72,7 @@ export function Dashboard(): JSX.Element {
       </div>
 
       {submitted === '' ? (
-        <p className="text-sm text-signal-muted">
-          输入查询条件后开始。运行过的查询会记在上面的「历史查询」里。
-        </p>
+        <p className="text-sm text-signal-muted">{t('dashboard.empty')}</p>
       ) : null}
 
       {error !== null ? <ErrorNote error={error} /> : null}
@@ -84,15 +84,31 @@ export function Dashboard(): JSX.Element {
       {submitted === '' ? null : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <MetricCard label="事件" value={data?.metrics.events ?? null} hint="选定范围内" />
-            <MetricCard label="服务" value={data?.metrics.services ?? null} hint="去重计数" />
-            <MetricCard label="主机" value={data?.metrics.hosts ?? null} hint="去重计数" />
-            <MetricCard label="时间桶" value={data?.metrics.buckets ?? null} hint="时间片" />
+            <MetricCard
+              label={t('dashboard.metrics.events')}
+              value={data?.metrics.events ?? null}
+              hint={t('dashboard.metrics.eventsHint')}
+            />
+            <MetricCard
+              label={t('dashboard.metrics.services')}
+              value={data?.metrics.services ?? null}
+              hint={t('dashboard.metrics.servicesHint')}
+            />
+            <MetricCard
+              label={t('dashboard.metrics.hosts')}
+              value={data?.metrics.hosts ?? null}
+              hint={t('dashboard.metrics.hostsHint')}
+            />
+            <MetricCard
+              label={t('dashboard.metrics.buckets')}
+              value={data?.metrics.buckets ?? null}
+              hint={t('dashboard.metrics.bucketsHint')}
+            />
           </div>
 
           {data !== null && data.partial && data.errors.timeline === undefined ? (
             <p className="rounded-md border border-signal-warn/40 bg-signal-warn/5 px-3 py-2 text-xs text-signal-warn">
-              部分视图不可用 —— 下方面板只展示 Splunk 实际返回的内容。
+              {t('dashboard.partial')}
             </p>
           ) : null}
 
@@ -103,16 +119,16 @@ export function Dashboard(): JSX.Element {
           <div className="grid gap-3 lg:grid-cols-2">
             {data?.by_service != null ? (
               <BarPanel
-                title="服务排行"
+                title={t('dashboard.byService')}
                 rows={data.by_service.rows}
-                emptyLabel="暂无服务维度拆解数据。"
+                emptyLabel={t('dashboard.byServiceEmpty')}
               />
             ) : null}
             {data?.by_host != null ? (
               <BarPanel
-                title="主机排行"
+                title={t('dashboard.byHost')}
                 rows={data.by_host.rows}
-                emptyLabel="暂无主机维度拆解数据。"
+                emptyLabel={t('dashboard.byHostEmpty')}
               />
             ) : null}
           </div>
@@ -123,14 +139,12 @@ export function Dashboard(): JSX.Element {
           {data?.errors.by_host !== undefined ? <ErrorNote error={data.errors.by_host} /> : null}
 
           {loading && data === null ? (
-            <p className="text-sm text-signal-muted">
-              正在向 Splunk 查询时间线与两个维度拆解…
-            </p>
+            <p className="text-sm text-signal-muted">{t('dashboard.loading')}</p>
           ) : null}
 
           {data !== null && data.metrics.events === 0 ? (
             <p className="text-sm text-signal-muted">
-              该时间范围内有 {formatCount(0)} 个事件。请扩大时间范围或更换查询条件。
+              {t('dashboard.noEvents', counted(0))}
             </p>
           ) : null}
         </>

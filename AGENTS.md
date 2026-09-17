@@ -85,6 +85,7 @@ Splunk REST API (HTTPS :8089)
 | 日志 | `server/logger.ts` | 零依赖 stderr 日志（模块名定宽），绝不打印凭据 |
 | Web | `server/web/` | Express 路由、静态资源、SPA 兜底 |
 | 前端 | `web/src/` | React 18 + Vite；只经 `/api` 与后端通信 |
+| 国际化 | `web/src/locales/` | 文案目录（`zh-CN.json` 为事实来源）；`lib/i18n.ts` 给 `t()` 与语言 store |
 
 ### Web 层（`server/web/`）
 
@@ -100,6 +101,20 @@ Splunk REST API (HTTPS :8089)
 
 前端构建产物与 API **同源**（由同一个 Express 应用提供 `dist/web`），因此不需要
 CORS 规则，页面里也没有任何凭据。`dashboard` 是 CLI 对 Web 的全部认知。
+
+### 国际化（`web/src/locales/`）
+
+用户可见文案一律经 `t()` 取，**不得写在组件里**：
+
+* 文案只存在 `src/locales/zh-CN.json`（事实来源）与 `en-US.json`。两者 key 集合与占位符
+  必须完全一致，`src/locales/locales.test.ts` 会在 CI 里强制这条 —— 漏翻译是**测试失败**，
+  不是线上冒出一个 `job.events`
+* `MessageKey` 由中文目录递归推导，拼错的 key 是**编译错误**
+* 复数写在同一个 key 下的 `one` / `other`，由 `Intl.PluralRules` 选形；`count` 只用于选形，
+  要显示的数字用 `value`（用 `counted()` 一次拿齐两个）
+* `lib/format.ts`、`lib/timeRange.ts`、`api/client.ts` 是纯模块，拿不到 React 上下文，
+  它们经 `getLocale()` 读当前语言；需要固定语言时传 `locale` 参数
+* 默认语言是中文，且**不跟随浏览器语言** —— 这是明确的产品决策，不是遗漏
 
 ---
 

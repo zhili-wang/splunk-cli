@@ -1,3 +1,4 @@
+import { useLocale } from '../hooks/useLocale'
 import { formatCount } from '../lib/format'
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function MetricCard({ label, value, hint }: Props): JSX.Element {
+  const { t } = useLocale()
   const unknown = value === null
 
   return (
@@ -23,7 +25,7 @@ export function MetricCard({ label, value, hint }: Props): JSX.Element {
       </div>
       {hint !== undefined ? (
         <div className="mt-1 text-xs text-signal-muted">
-          {unknown ? '不可用' : hint}
+          {unknown ? t('common.unavailable') : hint}
         </div>
       ) : null}
     </div>

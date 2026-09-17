@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   UNKNOWN,
+  counted,
   formatBucketTime,
   formatCount,
   formatInstant,
@@ -123,5 +124,62 @@ describe('formatSeconds', () => {
   it('reports an unknown duration as an em dash', () => {
     expect(formatSeconds(null)).toBe(UNKNOWN)
     expect(formatSeconds(undefined)).toBe(UNKNOWN)
+  })
+
+  it('chooses the plural form from the number it prints, not the raw one', () => {
+    // A 1.001s run prints as "1" once the fraction is dropped to two decimals.
+    // Choosing the form from the raw 1.001 selects `other` and prints the
+    // self-contradicting "1 seconds" beside the "1".
+    expect(formatSeconds(1.001, 'en-US')).toBe('1 second')
+    expect(formatSeconds(1.002, 'en-US')).toBe('1 second')
+    expect(formatSeconds(1.999, 'en-US')).toBe('2 seconds')
+  })
+})
+
+describe('counted', () => {
+  it('pairs the raw number with the grouped text the message prints', () => {
+    // The two differ on purpose: Intl.PluralRules needs the number to pick a
+    // form, the message has to show the grouped one.
+    expect(counted(23521)).toEqual({ count: 23521, value: '23,521' })
+  })
+
+  it('keeps a missing count from being pluralised as though it were zero', () => {
+    // "we could not find out" is not "there are none", and the em dash has to
+    // survive into the pluralised message.
+    expect(counted(null)).toEqual({ count: 0, value: UNKNOWN })
+  })
+
+  it('picks the form from the number it prints, so the two cannot disagree', () => {
+    // Same trap as `formatSeconds`: 1.002 prints as "1", so pluralising it off
+    // the raw value would read "1 rows".
+    expect(counted(1.002)).toEqual({ count: 1, value: '1' })
+    expect(counted(12.5)).toEqual({ count: 12.5, value: '12.5' })
+    expect(counted(12.567)).toEqual({ count: 12.57, value: '12.57' })
+  })
+})
+
+describe('formatting for another locale', () => {
+  it('uses the date order that locale writes', () => {
+    // Asserting the order rather than the exact string: a locale's punctuation
+    // moves between ICU versions, but "month before year" is the point of
+    // formatting for en-US at all.
+    expect(formatTimestamp('2024-01-02T03:04:05', 'zh-CN')).toMatch(/^2024\/1\/2/)
+    expect(formatTimestamp('2024-01-02T03:04:05', 'en-US')).toMatch(/^1\/2\/2024/)
+  })
+
+  it('translates the words it owns', () => {
+    expect(formatStatKey([], 'zh-CN')).toBe('(无)')
+    expect(formatStatKey([], 'en-US')).toBe('(none)')
+  })
+
+  it('inflects a duration for the locale that needs it', () => {
+    expect(formatSeconds(1, 'zh-CN')).toBe('1 秒')
+    expect(formatSeconds(1, 'en-US')).toBe('1 second')
+    expect(formatSeconds(2, 'en-US')).toBe('2 seconds')
+  })
+
+  it('groups numbers the way that locale writes them', () => {
+    expect(formatCount(23521, 'en-US')).toBe('23,521')
+    expect(formatCount(12.5, 'en-US')).toBe('12.5')
   })
 })
