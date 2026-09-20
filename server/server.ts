@@ -11,6 +11,7 @@
 import { createServer, type Server } from 'node:http'
 
 import { createApp, type CreateAppOptions } from './app'
+import { attachShutdownHandler } from './web/lifecycle'
 import { RUNTIME_KEY, WebRuntime } from './web/runtime'
 
 /** 固定监听地址；刻意不做成可配置项。 */
@@ -24,6 +25,13 @@ export interface StartServerOptions extends CreateAppOptions {
   /** 监听端口；`0` 表示由内核分配（测试用）。 */
   port?: number
   onListening?: (info: { port: number }) => void
+  /**
+   * 页面点了「停止服务」时、在**真正关闭之前**调用；最多一次。
+   *
+   * 回调交给调用方而不是在这里直接写日志：`server/` 这一层不认识 CLI 的输出通道，
+   * 该不该打印、打印成什么样，是 `bin/` 的决定。测试也靠它断言"确实收到了请求"。
+   */
+  onShutdownRequested?: () => void
 }
 
 /** 运行中的服务句柄。 */
@@ -68,6 +76,15 @@ export async function startServer(options: StartServerOptions = {}): Promise<Run
     const runtime = app.locals[RUNTIME_KEY]
     if (runtime instanceof WebRuntime) await runtime.close()
   }
+
+  // 页面触发的关闭与 SIGTERM 走**同一条**路径、同一个幂等守卫。
+  // 这里先查一次 `closed` 而不是直接调 `close()`：`close()` 虽然幂等，
+  // 但 `onShutdownRequested` 会跟着重复触发 —— 连点两下就打印两遍。
+  attachShutdownHandler(app, async () => {
+    if (closed) return
+    options.onShutdownRequested?.()
+    await close()
+  })
 
   return { server, port, close }
 }

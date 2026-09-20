@@ -9,7 +9,7 @@
  * 业务编排在 `server/services/**`；SPL 一律由服务层或校验器生成。
  */
 
-import type { NextFunction, Request, Response } from 'express'
+import type { Request, Response } from 'express'
 
 import { AlertsService } from '../../services/alerts'
 import { HealthService } from '../../services/health'
@@ -19,20 +19,6 @@ import { TimelineService } from '../../services/timeline'
 import { overviewRequest, searchRequest, statsRequest, timelineRequest } from '../schemas'
 import { runtimeOf } from '../runtime'
 import { VERSION } from '../../version'
-
-/** 把处理函数包成"异常一定交给统一错误中间件"的形式。 */
-export function route(
-  handler: (request: Request, response: Response) => Promise<void> | void,
-): (request: Request, response: Response, next: NextFunction) => void {
-  return (request, response, next) => {
-    try {
-      const result = handler(request, response)
-      if (result instanceof Promise) result.catch(next)
-    } catch (error) {
-      next(error)
-    }
-  }
-}
 
 /**
  * `GET /api/health` —— 状态码**永远是 200**。

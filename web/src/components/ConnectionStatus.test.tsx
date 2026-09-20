@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 
 import { fetchHealth } from '../api/endpoints'
+import {
+  markRunning,
+  markStopped,
+  markStopping,
+  resetServiceState,
+} from '../hooks/useServiceState'
 import type { HealthReport } from '../types/api'
 import { ConnectionStatus } from './ConnectionStatus'
 
@@ -176,5 +182,87 @@ describe('ConnectionStatus', () => {
     await settle()
 
     expect(container.innerHTML).toBe('')
+  })
+})
+
+describe('ConnectionStatus · while the service is being stopped', () => {
+  beforeEach(resetServiceState)
+
+  it('says the service is stopping, not that Splunk is unreachable', async () => {
+    // A red "not connected" would blame Splunk for something the user just did
+    // on purpose. The probe cannot distinguish the two — every request fails
+    // once the server is gone — so the store has to.
+    fetchHealthMock.mockResolvedValue(healthy())
+    render(<ConnectionStatus />)
+    await screen.findByText('已连接')
+
+    act(() => markStopping())
+
+    expect(screen.getByText('正在停止…')).toBeDefined()
+    expect(screen.queryByText('未连接')).toBeNull()
+  })
+
+  it('says stopped once it has stopped', async () => {
+    fetchHealthMock.mockResolvedValue(healthy())
+    render(<ConnectionStatus />)
+    await screen.findByText('已连接')
+
+    act(() => markStopped())
+
+    expect(screen.getByText('已停止')).toBeDefined()
+    expect(screen.queryByText('未连接')).toBeNull()
+  })
+
+  it('drops the latency it measured, which describes a server that is gone', async () => {
+    fetchHealthMock.mockResolvedValue(healthy())
+    render(<ConnectionStatus />)
+    await screen.findByText('12ms')
+
+    act(() => markStopped())
+
+    expect(screen.queryByText('12ms')).toBeNull()
+    expect(screen.queryByTitle('Splunk 9.0.2')).toBeNull()
+  })
+
+  it('stops polling, because every probe from here can only fail', async () => {
+    fetchHealthMock.mockResolvedValue(healthy())
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval')
+    render(<ConnectionStatus />)
+    await screen.findByText('已连接')
+    expect(fetchHealthMock).toHaveBeenCalledTimes(1)
+    // The healthy state's own interval is not what this case is about.
+    clearIntervalSpy.mockClear()
+
+    act(() => markStopping())
+
+    // The interval driving the poll goes with the effect that owned it...
+    expect(clearIntervalSpy).toHaveBeenCalled()
+    // ...and no new probe was sent, now or on the next tick.
+    expect(fetchHealthMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('an already-leaving service never probes at all', () => {
+    markStopped()
+    const setIntervalSpy = vi.spyOn(window, 'setInterval')
+
+    render(<ConnectionStatus />)
+
+    expect(fetchHealthMock).not.toHaveBeenCalled()
+    expect(setIntervalSpy).not.toHaveBeenCalled()
+    expect(screen.getByText('已停止')).toBeDefined()
+  })
+
+  it('resumes polling when a stop that failed puts the service back', async () => {
+    // The store can go back to `running` (the button probes health to find out,
+    // and a live answer means the stop did not take). Going quiet permanently
+    // would freeze the badge on a dashboard that is very much still up.
+    markStopped()
+    fetchHealthMock.mockResolvedValue(healthy())
+    render(<ConnectionStatus />)
+    expect(fetchHealthMock).not.toHaveBeenCalled()
+
+    act(() => markRunning())
+
+    await screen.findByText('已连接')
   })
 })

@@ -784,6 +784,20 @@ try {
 | GET | `/api/alerts` | `?count=&include_saved=` | `AlertList.toPublicDict()` |
 | POST | `/api/overview` | `{query, earliest?, latest?, span?}` | 见下 |
 | GET | `/api/version` | — | `{name, version}`：面板自己这一版的版本号（读包元数据，**不读 Splunk**） |
+| POST | `/api/shutdown` | — | `{success, stopping, message}`：让面板进程优雅退出 |
+
+`POST /api/shutdown` 是唯一一条**不读 Splunk 的 POST**，也是唯一一条会让服务消失的请求。
+它走的是 `dashboard` 收到 SIGTERM 时**同一条** `RunningServer.close()`：先停 HTTP，再释放
+连接池，改动不了任何 Splunk 状态。应答**先于**关闭发出（中间留 150ms 冲刷窗口），所以
+页面看到的是一个正经的 200，而不是连接重置。
+
+它的防护就是 `Origin` 守卫 —— 非回环来源在进入路由前已被 403，因此"访问一个恶意网页顺手
+关掉你的面板"这条路是堵死的，不需要额外的令牌（本机上的进程本来就能直接 kill）。**这条
+结论以"面板只服务回环地址"为前提**（见 [架构决策](#34-已知取舍) D1）：一旦有人把它反代到
+公网，这个端点就不再安全，必须补鉴权。
+
+宿主没有交出关闭句柄时（测试直接 `createApp()`、或把 app 嵌进别的进程）返回 503
+`ServiceNotStoppable`，而不是假装成功。
 
 `GET /api/health` 把**探针失败**（Splunk 连不上、凭据错误）报告在信封内：HTTP 状态仍是
 200 加 `success: false`，不是 5xx —— 监控脚本应读字段而不是只看状态码。失败维度在字段里
@@ -806,7 +820,8 @@ try {
 HTTP 状态码映射：`SafetyLimitError` / `ValidationError` → 422（后者为请求体或查询参数校验失败），
 `SplunkQueryError` → 400，`SplunkAuthenticationError` / `SplunkConnectionError` /
 `SplunkJobError` / `SplunkResultError` → 502，`SplunkTimeoutError` → 504，
-`ForbiddenOrigin` → 403，`FrontendNotBuilt` → 503（前端未构建），其余 → 500。
+`ForbiddenOrigin` → 403，`FrontendNotBuilt` → 503（前端未构建），`ServiceNotStoppable` → 503
+（宿主没交出关闭句柄），其余 → 500。
 
 一个例外：`/api` 下**路径或方法没有被任何 API 路由匹配**时（如 `GET /api/nope`、
 `POST /api/health`），拿到的是 `{"detail": "Not Found"}` /

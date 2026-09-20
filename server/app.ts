@@ -11,8 +11,10 @@ import express, { type Express } from 'express'
 import { loadSettings, type Settings } from './config/settings'
 import type { SplunkClient } from './client/splunk'
 import { errorHandler } from './web/errors'
-import { alerts, health, route, search, stats, timeline, version } from './web/routes/thin.routes'
 import { overview } from './web/routes/overview.routes'
+import { route } from './web/routes/route'
+import { shutdown } from './web/routes/shutdown.routes'
+import { alerts, health, search, stats, timeline, version } from './web/routes/thin.routes'
 import { RUNTIME_KEY, WebRuntime } from './web/runtime'
 import { originGuard } from './web/security'
 import { installStaticRoutes, resolveWebDir } from './web/static'
@@ -64,6 +66,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.get(`${API_PREFIX}/alerts`, route(alerts))
   app.get(`${API_PREFIX}/version`, route(version))
   app.post(`${API_PREFIX}/overview`, route(overview))
+  // 唯一一条不读 Splunk 的 POST：它关的是这个进程，不是任何 Splunk 资源。
+  app.post(`${API_PREFIX}/shutdown`, route(shutdown))
 
   // 最后挂载：SPA fallback 绝不能遮蔽任何 API 路由。
   installStaticRoutes(app, options.webDir === undefined ? resolveWebDir() : options.webDir)

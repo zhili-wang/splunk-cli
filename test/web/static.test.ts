@@ -135,12 +135,14 @@ describe('API 命名空间的 404 / 405（保留框架既有的 detail 形状）
     expect(ownsApiPath('/')).toBe(false)
   })
 
-  it('API 路由表与文档一致（7 条）', () => {
+  it('API 路由表与文档一致（8 条）', () => {
     expect([...API_ROUTES.keys()].sort()).toEqual([
       '/api/alerts',
       '/api/health',
       '/api/overview',
       '/api/search',
+      // 唯一一条不动 Splunk 的端点：它关的是这个进程自己。
+      '/api/shutdown',
       '/api/stats',
       '/api/timeline',
       '/api/version',

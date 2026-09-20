@@ -339,6 +339,12 @@ export function buildProgram(): Command {
 
     const handle = await serverModule.startServer({
       port: options.port ?? serverModule.DEFAULT_PORT,
+      // 页面上的「停止服务」会走到这里。终端必须说话：否则用户看到的是进程
+      // 莫名其妙地没了，而他其实是在浏览器里点的 —— 这条线索只能由这里给出。
+      // 与上面两行一样走 stdout，沿用既有的输出约定，不另立一套。
+      onShutdownRequested: () => {
+        emitText('stopping: requested from the dashboard page')
+      },
     })
     gracefulShutdown = handle.close
     emitText(`serving the dashboard on http://127.0.0.1:${handle.port}`)

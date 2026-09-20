@@ -28,6 +28,9 @@ export const HTTP_STATUS_BY_ERROR_TYPE: Readonly<Record<string, number>> = {
   SplunkTimeoutError: 504,
   ForbiddenOrigin: 403,
   FrontendNotBuilt: 503,
+  // 503 而不是 500：服务本身没坏，只是**这个宿主**没交出关闭句柄
+  // （直接 `createApp()` 的测试、或把 app 嵌进别的进程的场景）。
+  ServiceNotStoppable: 503,
 }
 
 /** 非 `SplunkError` 异常的状态码。 */

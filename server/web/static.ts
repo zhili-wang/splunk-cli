@@ -85,6 +85,8 @@ export const API_ROUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ['/api/alerts', new Set(['GET'])],
   ['/api/overview', new Set(['POST'])],
   ['/api/version', new Set(['GET'])],
+  // 不是 Splunk 端点：关的是这个进程自己（见 routes/shutdown.routes.ts）。
+  ['/api/shutdown', new Set(['POST'])],
 ])
 
 /**

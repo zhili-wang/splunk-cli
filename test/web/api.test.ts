@@ -1,5 +1,5 @@
 import express from 'express'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import request from 'supertest'
 
 import { createApp } from '../../server/app'
@@ -11,6 +11,7 @@ import {
   errorHandler,
   statusFor,
 } from '../../server/web/errors'
+import { attachShutdownHandler } from '../../server/web/lifecycle'
 import { WebRuntime } from '../../server/web/runtime'
 import { VERSION } from '../../server/version'
 import { jsonResponse, fixture, offlineClient, okSearchClient, settings } from './stub'
@@ -143,6 +144,7 @@ describe('错误映射（HTTP 状态码表）', () => {
       SplunkTimeoutError: 504,
       ForbiddenOrigin: 403,
       FrontendNotBuilt: 503,
+      ServiceNotStoppable: 503,
     })
   })
 
@@ -341,6 +343,65 @@ describe('/api/version', () => {
     const response = await request(app).get('/api/version')
     expect(response.status).toBe(200)
     expect(calls).toBe(0)
+  })
+})
+
+describe('/api/shutdown', () => {
+  it('宿主没交出关闭句柄 → 503，而不是假装成功', async () => {
+    // 直接 `createApp()` 的宿主（supertest、把 app 嵌进别的进程）就是这种情况。
+    // 应答 `{"success": true}` 会让页面显示「已停止」而进程其实还在跑 ——
+    // 那比报错更糟，因为用户会去关掉终端却发现自己早就"关过了"。
+    const app = createApp({ settings: settings(), client: okSearchClient(), ...NO_WEB })
+
+    const response = await request(app).post('/api/shutdown')
+
+    expect(response.status).toBe(503)
+    expect(response.body.error.type).toBe('ServiceNotStoppable')
+    // 报错信息必须给出下一步 —— 用户看不见钩子，只能靠这句话知道该去做什么。
+    expect(response.body.error.message).toContain('Ctrl-C')
+  })
+
+  it('不读 Splunk：客户端一次都没被调用', async () => {
+    // 与 `/api/version` 同一条约束。关的是这个进程，不是任何 Splunk 资源。
+    let calls = 0
+    const app = createApp({
+      settings: settings(),
+      client: offlineClient([
+        {
+          match: '/services/',
+          response: () => {
+            calls += 1
+            return jsonResponse(200, {})
+          },
+        },
+      ]),
+      ...NO_WEB,
+    })
+
+    await request(app).post('/api/shutdown')
+
+    expect(calls).toBe(0)
+  })
+
+  it('挂了钩子 → 200；且响应到手的那一刻**还没有**关闭', async () => {
+    const app = createApp({ settings: settings(), client: okSearchClient(), ...NO_WEB })
+    let closed = 0
+    attachShutdownHandler(app, () => {
+      closed += 1
+    })
+
+    const response = await request(app).post('/api/shutdown')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toMatchObject({ success: true, stopping: true })
+    // 顺序契约，也是整个宽限窗口存在的唯一理由：先回响应、后关闭。
+    // 反过来的话浏览器看到的是连接重置而不是这个 200，用户以为按钮没生效，
+    // 于是反复点一个其实已经生效的按钮（见 lifecycle.ts 的 SHUTDOWN_GRACE_MS）。
+    expect(closed).toBe(0)
+
+    await vi.waitFor(() => {
+      expect(closed).toBe(1)
+    })
   })
 })
 

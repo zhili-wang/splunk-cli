@@ -13,6 +13,20 @@ export interface VersionInfo {
   version: string
 }
 
+/**
+ * The acknowledgement from `POST /api/shutdown`.
+ *
+ * `stopping` rather than `stopped` on purpose: the reply is written before the
+ * server closes, so at the moment it arrives the process is on its way out but
+ * not yet gone. Nothing in the UI should be derived from anything finer than
+ * that.
+ */
+export interface StopServiceResult {
+  success: boolean
+  stopping: boolean
+  message: string
+}
+
 export interface TimeRange {
   earliest: string
   latest: string

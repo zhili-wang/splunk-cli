@@ -545,6 +545,29 @@ describe('dashboard（长驻命令 + 优雅关闭）', () => {
       exitSpy.mockRestore()
     }
   })
+  it('页面上的「停止服务」走同一条优雅关闭路径，并在终端说明原因', async () => {
+    const running = run('dashboard', '--port', '0')
+    await waitFor(() => stdout.join('').includes('serving the dashboard'))
+    const port = Number(/http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout.join(''))?.[1] ?? '0')
+    expect(port).toBeGreaterThan(0)
+
+    const response = await fetch(`http://127.0.0.1:${port}/api/shutdown`, { method: 'POST' })
+
+    // 响应先到、且是个正经的 200 —— 这正是宽限窗口存在的意义（见 SHUTDOWN_GRACE_MS）。
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ success: true, stopping: true })
+
+    // 主流程真的回来了。驻留靠的是 `server` 的 close 事件而不只是信号，
+    // 所以"页面关掉的服务"和"Ctrl-C 关掉的服务"从同一个出口离开。
+    expect(await running).toBe(0)
+
+    // 终端必须说话：否则用户看到的是进程莫名其妙地没了，而他其实是在浏览器里点的
+    // —— 这条线索只能由这里给出。
+    expect(stdout.join('')).toContain('requested from the dashboard page')
+
+    // 服务确实停了：端口不再接受连接。
+    await expect(fetch(`http://127.0.0.1:${port}/api/health`)).rejects.toThrow()
+  })
 })
 
 describe('入口判定与 runAsMain', () => {

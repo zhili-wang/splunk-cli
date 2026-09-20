@@ -4,6 +4,7 @@ import { fetchVersion } from './api/endpoints'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { KeepAliveRoutes } from './components/KeepAliveRoutes'
 import { LocaleToggle } from './components/LocaleToggle'
+import { StopServiceButton } from './components/StopServiceButton'
 import { ThemeToggle } from './components/ThemeToggle'
 import { useAsync } from './hooks/useAsync'
 import { useLocale } from './hooks/useLocale'
@@ -80,14 +81,20 @@ export default function App(): JSX.Element {
       <footer className="sticky bottom-0 z-10 border-t border-ink-800 bg-ink-950/90 px-6 py-3 text-xs text-signal-muted backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] items-center gap-3">
           <span>{t('app.footer.readonly')}</span>
-          {/* Which build is running: the first thing a bug report needs, and the
-              one fact that cannot be read off the page anywhere else. Absent
-              rather than wrong when the call fails. */}
-          {version.data !== null ? (
-            <span className="tnum ml-auto" title={t('app.footer.version')}>
-              {version.data.name} v{version.data.version}
-            </span>
-          ) : null}
+          {/* Grouped and pushed right as a unit: the version used to carry the
+              `ml-auto` itself, so a failed version call left the whole right
+              side empty and the stop button would have drifted left with it. */}
+          <div className="ml-auto flex items-center gap-3">
+            {/* Which build is running: the first thing a bug report needs, and the
+                one fact that cannot be read off the page anywhere else. Absent
+                rather than wrong when the call fails. */}
+            {version.data !== null ? (
+              <span className="tnum" title={t('app.footer.version')}>
+                {version.data.name} v{version.data.version}
+              </span>
+            ) : null}
+            <StopServiceButton />
+          </div>
         </div>
       </footer>
     </div>

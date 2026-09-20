@@ -8,6 +8,7 @@ import {
   fetchStats,
   fetchTimeline,
   fetchVersion,
+  stopService,
 } from './endpoints'
 
 function mockFetch(body: unknown): void {
@@ -109,6 +110,28 @@ describe('POST endpoints', () => {
       latest: 'now',
       span: '5m',
     })
+  })
+})
+
+describe('stopService', () => {
+  it('POSTs to the path the backend actually serves, with no arguments', async () => {
+    // Nothing else guards this string. The button's own tests mock this module
+    // out and the backend tests exercise the backend, so a typo here would keep
+    // every suite green while the button did nothing at all.
+    mockFetch({ success: true, stopping: true, message: 'bye' })
+
+    await expect(stopService()).resolves.toEqual({
+      success: true,
+      stopping: true,
+      message: 'bye',
+    })
+
+    const [path, init] = lastCall()
+    expect(path).toBe('/api/shutdown')
+    expect(init?.method).toBe('POST')
+    // The host takes no parameters: if this endpoint ever grows one (a token,
+    // say), this assertion is what forces the caller to be updated with it.
+    expect(JSON.parse(String(init?.body))).toEqual({})
   })
 })
 

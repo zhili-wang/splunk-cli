@@ -94,10 +94,20 @@ Splunk REST API (HTTPS :8089)
 * 绝不 import CLI 模块（依赖只能向下，Web 与 CLI 互不依赖）
 * 绝不 import `undici`，绝不直接构造 Splunk REST 请求
 * 绝不拼接 SPL —— 一切 SPL 由 Service 层或 `safety/validator.ts` 生成
-* 响应必须原样返回 Service 模型的 `toPublicDict()`，不得构造平行格式（两个例外：
+* 响应必须原样返回 Service 模型的 `toPublicDict()`，不得构造平行格式（三个例外：
   `POST /api/overview` 的聚合外壳，其中三个子面板仍原样透传；`GET /api/version` 只回
-  本地包元数据（`name` / `version`），**不读 Splunk、不是 Splunk 数据的第二份视图**）
-* 不新增写端点；告警的 enable / disable / delete / update 永不实现
+  本地包元数据（`name` / `version`）；`POST /api/shutdown` 只回
+  `{success, stopping, message}` —— 后两者都**不读 Splunk、不是 Splunk 数据的第二份视图**）
+* 不新增写端点；告警的 enable / disable / delete / update 永不实现。
+  这条管的是**绝不写 Splunk**。`POST /api/shutdown`（页面上的「停止服务」）不违反它：
+  它不碰任何 Splunk 资源，关的是这个进程自己，走的是 `dashboard` 收到 SIGTERM 时
+  **同一条** `RunningServer.close()`，因此也**不会绕过**下面的只读白名单。
+  今后再加端点的判据是"它改不改 Splunk 状态"，不是"它是不是 POST"
+
+本条约束有一个前提：**面板只服务回环地址**（`server/server.ts` 固定绑定 `127.0.0.1`，
+不做成选项）。`/api/shutdown` 的防护就是这条 —— 非回环 `Origin` 在进入路由前已被
+`originGuard` 403 掉，所以不需要额外令牌。**若将来有人把它反代到公网，这个前提即失效，
+该端点必须补鉴权。**
 
 前端构建产物与 API **同源**（由同一个 Express 应用提供 `dist/web`），因此不需要
 CORS 规则，页面里也没有任何凭据。`dashboard` 是 CLI 对 Web 的全部认知。

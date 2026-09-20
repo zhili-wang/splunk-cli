@@ -11,6 +11,16 @@
     "footer": {
       "readonly": "Read-only. Every query runs through the same service layer as the CLI.",
       "version": "splunk-cli version"
+    },
+    "service": {
+      "stop": "Stop service",
+      "stopHint": "Shut down this dashboard process (the same as Ctrl-C in the terminal)",
+      "confirm": "Confirm stop?",
+      "confirmHint": "Click again to really stop; cancels itself after {seconds} seconds",
+      "stopping": "Stopping…",
+      "stopped": "Service stopped",
+      "stoppedHint": "You can close this page now",
+      "failed": "Stop failed"
     }
   },
   "locale": {
@@ -37,7 +47,9 @@
   "connection": {
     "checking": "Checking Splunk…",
     "ok": "Connected",
-    "failed": "Not connected"
+    "failed": "Not connected",
+    "stopping": "Stopping…",
+    "stopped": "Stopped"
   },
   "theme": {
     "switch": "Switch to {mode} mode",

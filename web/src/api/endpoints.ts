@@ -7,6 +7,7 @@ import type {
   OverviewResponse,
   SearchResult,
   StatsResult,
+  StopServiceResult,
   TimelineResult,
   VersionInfo,
 } from '../types/api'
@@ -45,6 +46,18 @@ export function fetchTimeline(args: RangeArgs & { span?: string }): Promise<Time
 
 export function fetchAlerts(includeSaved = false): Promise<AlertList> {
   return getJson<AlertList>(`/api/alerts?include_saved=${String(includeSaved)}`)
+}
+
+/**
+ * Ask the process that served this page to shut down.
+ *
+ * The only call here that is not a Splunk read: it stops the dashboard itself,
+ * by the same path Ctrl-C takes. Same-origin is the whole defense — the backend
+ * refuses any request whose Origin is not loopback, so a page you happen to be
+ * visiting cannot use this to close your dashboard.
+ */
+export function stopService(): Promise<StopServiceResult> {
+  return postJson<StopServiceResult>('/api/shutdown', {})
 }
 
 /**
