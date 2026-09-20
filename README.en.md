@@ -452,6 +452,30 @@ only in indentation whitespace: the CLI uses `indent=2`, while HTTP responses ar
 * **The frontend cannot bypass limits**: time ranges and result-count caps are enforced by the Service
   layer, and anything over the limit is rejected outright.
 
+After a successful start it registers itself in `~/.splunk-cli/servers.json` and unregisters on graceful
+shutdown; `stop-web` uses that registry (plus a process scan as a fallback) to find it.
+
+### `stop-web`
+
+```bash
+splunk-cli stop-web            # stop every locally running dashboard
+splunk-cli stop-web --no-scan  # only stop servers recorded in the registry, don't scan the process table
+splunk-cli stop-web --json
+```
+
+Stops every dashboard started by this CLI that is still listening. Each stop walks a **three-level
+ladder**: first `POST /api/shutdown` asks it to shut down gracefully, then falls back to `SIGTERM`, and
+after a timeout it **reports the failure honestly and never escalates to `SIGKILL`** — a hard kill would
+skip the process's own cleanup (unregistering from the registry, releasing the port, flushing logs).
+
+* **Two clues for locating**: it reads the `~/.splunk-cli/servers.json` registry first, then scans `ps`
+  for processes whose command line contains `splunk-cli dashboard` (a fallback if the registry is lost).
+  Every candidate must pass a loopback port probe to confirm its identity — it never touches a process
+  that does not belong to this CLI.
+* **No Splunk credentials needed**: this command deliberately does not read config or connect to Splunk —
+  a user often wants to stop the dashboard precisely because Splunk is unreachable.
+* **Exit codes**: 0 = all stopped / nothing was running; 1 = at least one failed to stop.
+
 ### `init`
 
 ```bash

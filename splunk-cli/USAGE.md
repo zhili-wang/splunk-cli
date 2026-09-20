@@ -64,6 +64,7 @@
 | `limits` | 查看安全上限与 Job 运行预算 | `splunk-cli limits` |
 | `init` | 创建配置目录与模板 | `splunk-cli init` |
 | `dashboard` | 本地可视化面板 | `splunk-cli dashboard` |
+| `stop-web` | 停掉所有本机 dashboard | `splunk-cli stop-web` |
 
 ### 1.3 三十秒上手
 
@@ -522,7 +523,34 @@ splunk-cli dashboard [--port <n>]     # 默认 8765
 | 信息泄漏 | 响应体绝不含凭据；错误信息统一脱敏 |
 | 只读 | 端点白名单不变；告警的写操作没有路由，也没有 API |
 
-### 3.11 全局选项
+### 3.11 `stop-web` — 停掉所有本机 dashboard
+
+```bash
+splunk-cli stop-web [--no-scan]
+```
+
+停掉所有由本 CLI 启动、仍在监听的 dashboard。**不需要 Splunk 凭据**：这条命令刻意
+不读配置、不连 Splunk——用户想停掉面板，往往正是因为 Splunk 连不上了。
+
+停止走**三级阶梯**：`POST /api/shutdown` → 不应答退到 `SIGTERM` → 超时如实报告失败，
+**绝不升级到 SIGKILL**（强杀会跳过进程自己的清理）。成功以"端口不再应答"为准，
+而不是"信号发出去了"。
+
+定位靠两条线索，每条候选都要过回环端口身份探测，绝不碰不属于本 CLI 的进程：
+
+1. **名册**：`dashboard` 启动时把 `{pid, port, startedAt}` 写进
+   `~/.splunk-cli/servers.json`，优雅关闭时自行注销。
+2. **进程扫描**（`--no-scan` 时跳过）：`ps` 找命令行带 `splunk-cli dashboard` 的进程，
+   名册丢了也能兜底。Windows 没有 `ps`，那条线索自动跳过、只认名册。
+
+| 情形 | 退出码 |
+| --- | --- |
+| 全部停掉 / 本来就没有在跑的 | 0 |
+| 至少一个没停掉 | 1 |
+
+`--json` 输出 `{ success, found, stopped, failed, servers: [{pid, port, source, outcome, reason?}] }`。
+
+### 3.12 全局选项
 
 | 选项 | 说明 |
 | --- | --- |

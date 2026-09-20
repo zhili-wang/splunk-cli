@@ -11,14 +11,13 @@
 import { createServer, type Server } from 'node:http'
 
 import { createApp, type CreateAppOptions } from './app'
+import { DEFAULT_HOST, DEFAULT_PORT } from './web/defaults'
 import { attachShutdownHandler } from './web/lifecycle'
 import { RUNTIME_KEY, WebRuntime } from './web/runtime'
 
-/** 固定监听地址；刻意不做成可配置项。 */
-export const DEFAULT_HOST = '127.0.0.1'
-
-/** 默认端口。 */
-export const DEFAULT_PORT = 8765
+// 常量本体在 `web/defaults.ts`（零依赖的叶子模块）。这里转出去只因本模块是
+// 调用方的既有入口，改签名会波及 CLI；新代码请直接从 `web/defaults` 取。
+export { DEFAULT_HOST, DEFAULT_PORT }
 
 /** 启动参数。 */
 export interface StartServerOptions extends CreateAppOptions {

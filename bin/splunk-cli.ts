@@ -26,6 +26,9 @@ import {
 } from '../server/errors'
 import { setLogLevel } from '../server/logger'
 import { emitDiagnostic, emitJson, emitText } from '../server/output/envelope'
+import { discoverServers } from '../server/web/discovery'
+import { registerServer, unregisterServer } from '../server/web/registry'
+import { stopServers, type StopReason } from '../server/web/stopper'
 import {
   formatNumber,
   keyValueTable,
@@ -123,6 +126,18 @@ function reportError(error: unknown, jsonOutput: boolean): void {
   const message = error instanceof Error ? error.message : String(error)
   emitDiagnostic(`error: unexpected ${type}: ${sanitizeMessage(message)}`)
   emitDiagnostic(`hint: re-run with --verbose for details (splunk-cli ${VERSION})`)
+}
+
+/** 把停止失败的原因翻成人话；失败就要说清失败在哪，而不是抛个裸码。 */
+function reasonText(reason: StopReason): string {
+  switch (reason) {
+    case 'still-running':
+      return 'still running after the stop request'
+    case 'permission-denied':
+      return 'permission denied sending the stop signal'
+    case 'signal-failed':
+      return 'failed to send the stop signal'
+  }
 }
 
 /** 注册公共选项。 */
@@ -350,6 +365,10 @@ export function buildProgram(): Command {
     emitText(`serving the dashboard on http://127.0.0.1:${handle.port}`)
     emitText('read-only; press Ctrl-C to stop')
 
+    // 登记进名册：stop-web 靠它定位正在跑的面板。注册失败（权限、磁盘满）不致命——
+    // 进程扫描仍能兜底——所以刻意不在这里抛错。
+    registerServer({ pid: process.pid, port: handle.port, startedAt: new Date().toISOString() })
+
     // 前台驻留，直到收到中断信号。
     await new Promise<void>((resolve) => {
       const stop = (): void => {
@@ -359,6 +378,59 @@ export function buildProgram(): Command {
       process.once('SIGHUP', stop)
       handle.server.once('close', () => resolve())
     })
+    // 优雅关闭后注销：SIGTERM、页面「停止服务」、Ctrl-C 都汇聚到同一个 resolve，
+    // 所以注销只写一次。注销失败同样不致命——stop-web 的探针会丢弃陈旧条目。
+    unregisterServer(process.pid)
+  })
+
+  withCommon(
+    program
+      .command('stop-web')
+      .description('Stop every dashboard started by this CLI')
+      // 默认连进程表一起扫；关掉它就只认名册里登记过的服务。
+      .option('--no-scan', 'Only stop servers recorded in the registry'),
+  ).action(async (options: CommonOptions & { scan?: boolean }) => {
+    applyCommon(options)
+    // 刻意不读 Splunk 配置、不建连接：用户想停掉面板，往往正是因为 Splunk 连不上，
+    // 这时候去加载凭据只会让这条命令在最需要它的时候失败。
+    const servers = await discoverServers({ scan: options.scan !== false })
+    const results = await stopServers(servers)
+
+    const stopped = results.filter((r) => r.outcome === 'stopped').length
+    const failed = results.length - stopped
+
+    if (options.json === true) {
+      // stopServers 按传入顺序逐个处理，结果与发现到的服务一一对应。
+      emitJson({
+        success: failed === 0,
+        found: servers.length,
+        stopped,
+        failed,
+        servers: results.map((result, index) => {
+          const server = servers[index]
+          const base = {
+            pid: result.pid,
+            port: result.port,
+            source: server === undefined ? 'registry' : server.source,
+            outcome: result.outcome,
+          }
+          return result.outcome === 'failed' ? { ...base, reason: result.reason } : base
+        }),
+      })
+    } else if (results.length === 0) {
+      emitText('no running dashboard')
+    } else {
+      for (const result of results) {
+        if (result.outcome === 'stopped') {
+          emitText(`stopped: pid ${result.pid} (port ${result.port})`)
+        } else {
+          emitText(`failed: pid ${result.pid} (port ${result.port}): ${reasonText(result.reason)}`)
+        }
+      }
+    }
+
+    // 与 health 同一约定：报告已经说完，带着自己的退出码离开。
+    if (failed > 0) throw new ExitSignal(1)
   })
 
   withCommon(

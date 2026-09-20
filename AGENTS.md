@@ -83,7 +83,7 @@ Splunk REST API (HTTPS :8089)
 | Output | `server/output/` | `envelope.ts`（信封与退出码）、`table.ts`（文本表格） |
 | 数字契约 | `server/format.ts` | `%g` 风格格式化；数字契约在此收敛，勿在别处另写一套 |
 | 日志 | `server/logger.ts` | 零依赖 stderr 日志（模块名定宽），绝不打印凭据 |
-| Web | `server/web/` | Express 路由、静态资源、SPA 兜底 |
+| Web | `server/web/` | Express 路由、静态资源、SPA 兜底；`registry.ts`（服务名册）、`probe.ts` / `discovery.ts` / `stopper.ts`（`stop-web` 的定位与停止编排）、`defaults.ts`（回环地址与默认端口） |
 | 前端 | `web/src/` | React 18 + Vite；只经 `/api` 与后端通信 |
 | 国际化 | `web/src/locales/` | 文案目录（`zh-CN.json` 为事实来源）；`lib/i18n.ts` 给 `t()` 与语言 store |
 
@@ -111,6 +111,21 @@ Splunk REST API (HTTPS :8089)
 
 前端构建产物与 API **同源**（由同一个 Express 应用提供 `dist/web`），因此不需要
 CORS 规则，页面里也没有任何凭据。`dashboard` 是 CLI 对 Web 的全部认知。
+
+### `stop-web` 与服务名册（`server/web/` 的进程管理）
+
+`stop-web` 停掉所有本 CLI 启动的 dashboard，定位靠两条线索：名册
+（`~/.splunk-cli/servers.json`，`dashboard` 启动时登记、优雅关闭时注销）加进程扫描
+兜底。它必须遵守：
+
+* **绝不升级到 SIGKILL**：`POST /api/shutdown` → `SIGTERM` → 超时如实报告失败。
+  强杀会跳过进程自己的清理（注销名册、释放端口、冲刷日志）。
+* **成功以"端口不再应答"为准**，不是"信号发出去了"——信号送达不等于对方听懂了。
+* **每个候选都要过回环端口身份探测**（`GET /api/version` 必须回我们的形状）才动手，
+  绝不碰不属于本 CLI 的进程；pid 复用是这类工具最现实的危险。
+* **不需要 Splunk 凭据**：刻意不读配置、不连 Splunk——用户想停掉面板，往往正是因为
+  Splunk 连不上了。
+* **Windows 没有 `ps`**，进程扫描那条线索自动跳过、只认名册，不算失败。
 
 ### 国际化（`web/src/locales/`）
 

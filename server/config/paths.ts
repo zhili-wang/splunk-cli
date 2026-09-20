@@ -25,6 +25,15 @@ export const CONFIG_DIR_ENV = 'SPLUNK_CONFIG_DIR'
 /** 配置文件名。 */
 export const CONFIG_FILE_NAME = 'config.env'
 
+/**
+ * 服务名册文件名。
+ *
+ * 记录由 `splunk-cli dashboard` 启动、当前仍在监听的服务（pid / 端口 / 启动时间），
+ * 供 `splunk-cli stop-web` 定位。它是**加速线索而非事实来源**：进程扫描仍能兜底，
+ * 因此文件损坏或缺失都只会让停止变慢，不会让它失败。
+ */
+export const REGISTRY_FILE_NAME = 'servers.json'
+
 /** 目录权限：仅属主可读写执行。 */
 export const DIR_MODE = 0o700
 
@@ -90,6 +99,15 @@ export function resolveConfigDir(env: NodeJS.ProcessEnv = process.env): ConfigDi
  */
 export function writableConfigFile(env: NodeJS.ProcessEnv = process.env): string {
   return resolveConfigDir(env).configFile
+}
+
+/**
+ * 返回服务名册路径，无论它是否存在（不触碰文件系统）。
+ *
+ * @param env 环境变量表；默认 `process.env`。
+ */
+export function registryFilePath(env: NodeJS.ProcessEnv = process.env): string {
+  return join(configDirPath(env), REGISTRY_FILE_NAME)
 }
 
 /**

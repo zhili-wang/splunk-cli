@@ -1,11 +1,14 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:http'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer, type Server } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isMainModule, main, runAsMain } from '../bin/splunk-cli'
+import { registryFilePath } from '../server/config/paths'
 
 /**
  * CLI 层测试。
@@ -39,6 +42,9 @@ let stdout: string[]
 let stderr: string[]
 let stdoutSpy: ReturnType<typeof vi.spyOn>
 let stderrSpy: ReturnType<typeof vi.spyOn>
+/** 用例起的 HTTP 桩与驻留子进程，逐个用例收干净，避免端口/进程泄漏到下一个用例。 */
+let panels: Server[]
+let spawned: ChildProcess[]
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'splunk-cli-bin-'))
@@ -51,6 +57,8 @@ beforeEach(() => {
   process.env['SPLUNK_CONFIG_DIR'] = configDir
   stdout = []
   stderr = []
+  panels = []
+  spawned = []
   stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
     stdout.push(String(chunk))
     return true
@@ -61,15 +69,34 @@ beforeEach(() => {
   })
 })
 
-afterEach(() => {
+afterEach(async () => {
   stdoutSpy.mockRestore()
   stderrSpy.mockRestore()
   for (const key of ENV_KEYS) {
     if (savedEnv[key] === undefined) delete process.env[key]
     else process.env[key] = savedEnv[key]
   }
+  for (const panel of panels) {
+    panel.closeAllConnections()
+    await new Promise<void>((resolve) => panel.close(() => resolve()))
+  }
+  for (const child of spawned) child.kill('SIGKILL')
   rmSync(dir, { recursive: true, force: true })
 })
+
+/**
+ * 起一个真的活着、但什么也不做的进程，拿到一个可信的 pid。
+ *
+ * 名册登记会清掉已死的 pid，所以用例里不能拿一个编出来的数字充数。
+ */
+function alivePid(): number {
+  const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)'], {
+    stdio: 'ignore',
+  })
+  if (child.pid === undefined) throw new Error('无法启动驻留进程')
+  spawned.push(child)
+  return child.pid
+}
 
 /** 读取真实 fixture（由抓取脚本从 Splunk 8.0.2 抓取）。 */
 function fixture(name: string): Record<string, unknown> {
@@ -522,8 +549,35 @@ describe('dashboard（长驻命令 + 优雅关闭）', () => {
     const health = await fetch(`http://127.0.0.1:${port}/api/health?include_license=false`)
     expect(health.status).toBe(200)
 
+    // 启动后登记进名册：stop-web 靠它定位，registrition 必须是启动流程的一部分。
+    const registry = JSON.parse(readFileSync(registryFilePath(process.env), 'utf8')) as {
+      version: number
+      servers: Array<{ pid: number; port: number; startedAt?: string }>
+    }
+    expect(registry.version).toBe(1)
+    expect(registry.servers.length).toBe(1)
+    expect(registry.servers[0]?.pid).toBe(process.pid)
+    expect(registry.servers[0]?.port).toBe(port)
+    expect(typeof registry.servers[0]?.startedAt).toBe('string')
+
     process.emit('SIGTERM')
     expect(await running).toBe(0)
+  })
+
+  it('优雅关闭后从名册注销（SIGTERM 与页面关闭都走同一条）', async () => {
+    const running = run('dashboard', '--port', '0')
+    await waitFor(() => stdout.join('').includes('serving the dashboard'))
+    // 启动后名册里有这一条
+    expect(existsSync(registryFilePath(process.env))).toBe(true)
+
+    process.emit('SIGTERM')
+    expect(await running).toBe(0)
+    // 关闭后名册被清掉——否则 stop-web 会把这条陈旧记录当成"还在跑"去探。
+    const registry = JSON.parse(readFileSync(registryFilePath(process.env), 'utf8')) as {
+      version: number
+      servers: unknown[]
+    }
+    expect(registry.servers).toEqual([])
   })
 
   it('SIGINT 会先优雅关闭再以 130 退出（而不是硬切断）', async () => {
@@ -570,6 +624,132 @@ describe('dashboard（长驻命令 + 优雅关闭）', () => {
   })
 })
 
+describe('stop-web（停止所有启动的 web 服务）', () => {
+  /**
+   * 面板桩：`/api/version` 认得出来，`/api/shutdown` 按给定行为应答。
+   *
+   * `accept` 时会在应答冲刷之后释放端口——真实服务也是这个次序，正是它让
+   * "探到端口安静了"成为可靠的停止判据。
+   */
+  async function panel(onShutdown: 'accept' | 'reject'): Promise<number> {
+    const server = createServer((request, response) => {
+      const json = (status: number, body: unknown): void => {
+        response.writeHead(status, { 'content-type': 'application/json' })
+        response.end(JSON.stringify(body))
+      }
+
+      if (request.url === '/api/version') {
+        json(200, { name: 'splunk-cli', version: '0.1.5' })
+        return
+      }
+      if (request.url === '/api/shutdown' && request.method === 'POST') {
+        if (onShutdown === 'reject') {
+          json(503, { detail: 'not now' })
+          return
+        }
+        json(200, { success: true, stopping: true })
+        setTimeout(() => {
+          server.close()
+          server.closeAllConnections()
+        }, 20)
+        return
+      }
+      json(404, { detail: 'Not Found' })
+    })
+
+    panels.push(server)
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()))
+    return (server.address() as AddressInfo).port
+  }
+
+  /** 名册里登记一条。pid 必须是个真活着的进程，否则登记会被当成陈旧条目清掉。 */
+  function enrol(pid: number, port: number): void {
+    const path = registryFilePath(process.env)
+    mkdirSync(dirname(path), { recursive: true })
+    writeFileSync(
+      path,
+      JSON.stringify({ version: 1, servers: [{ pid, port, startedAt: '2026-09-20T00:00:00.000Z' }] }),
+      'utf8',
+    )
+  }
+
+  it('没有运行中的服务时如实说明，并以 0 退出', async () => {
+    // 顺带立一条契约：停止面板**绝不**需要 Splunk。用户会想停掉面板，
+    // 恰恰可能是因为 Splunk 连不上了——这时候再去读配置只会让命令彻底无用。
+    // 指向一个必然连不上的地址：真去连了的话，这里不可能以 0 退出。
+    process.env['SPLUNK_URL'] = 'http://127.0.0.1:1'
+
+    expect(await run('stop-web', '--no-scan')).toBe(0)
+    // 用"按行全等"而不是 toContain：一旦扫描误报/多停掉一个服务，整行不等就会暴露，
+    // 而子串断言可能仍被那句 no running dashboard 掩盖。
+    expect(stdout.join('').split('\n').filter((l) => l.trim() !== '')).toEqual([
+      'no running dashboard',
+    ])
+    expect(stderr.join('')).toBe('')
+  })
+
+  it('--json 输出信封', async () => {
+    expect(await run('stop-web', '--no-scan', '--json')).toBe(0)
+    expect(JSON.parse(stdout.join(''))).toEqual({
+      success: true,
+      found: 0,
+      stopped: 0,
+      failed: 0,
+      servers: [],
+    })
+  })
+
+  it('名册条目过期（端口上没人）时不谎报停止', async () => {
+    // 崩溃留下的陈旧条目：pid 早没了，端口也没人监听。
+    // 探针否掉它，于是这里应当是"无事可做"，而不是一条假的 stopped。
+    enrol(alivePid(), 1)
+
+    expect(await run('stop-web', '--no-scan')).toBe(0)
+    expect(stdout.join('')).toContain('no running dashboard')
+  })
+
+  it('停掉名册里的服务，报告 pid 与端口', async () => {
+    const pid = alivePid()
+    const port = await panel('accept')
+    enrol(pid, port)
+
+    expect(await run('stop-web', '--no-scan')).toBe(0)
+    expect(stdout.join('')).toContain(`stopped: pid ${pid} (port ${port})`)
+
+    // 优雅路径走通了就不该再发信号：多余的 SIGTERM 会让对方多做一次关闭。
+    expect(() => process.kill(pid, 0)).not.toThrow()
+  })
+
+  it('停不掉时以 1 退出，并如实说明是哪一条没停', async () => {
+    const pid = alivePid()
+    const port = await panel('reject')
+    enrol(pid, port)
+
+    // 面板拒绝关闭，进程也不肯走；到点后如实报失败，绝不升级到 SIGKILL。
+    expect(await run('stop-web', '--no-scan')).toBe(1)
+    const text = stdout.join('')
+    expect(text).toContain(`failed: pid ${pid} (port ${port})`)
+    expect(text).toContain('still running')
+  })
+
+  it('--json 在失败时同样以 1 退出，并逐条给出结果', async () => {
+    const pid = alivePid()
+    const port = await panel('reject')
+    enrol(pid, port)
+
+    expect(await run('stop-web', '--no-scan', '--json')).toBe(1)
+    expect(JSON.parse(stdout.join(''))).toEqual({
+      success: false,
+      found: 1,
+      stopped: 0,
+      failed: 1,
+      servers: [
+        { pid, port, source: 'registry', outcome: 'failed', reason: 'still-running' },
+      ],
+    })
+  })
+})
+
 describe('入口判定与 runAsMain', () => {
   it('isMainModule：argv[1] 不是真实路径时安全返回 false', () => {
     const savedArgv = process.argv
@@ -611,7 +791,7 @@ describe('command wiring', () => {
   })
 
   it('每个命令都有 --help（含退出码约定所在的总览）', async () => {
-    for (const command of ['search', 'stats', 'timeline', 'fields', 'alerts', 'health', 'config', 'init', 'limits']) {
+    for (const command of ['search', 'stats', 'timeline', 'fields', 'alerts', 'health', 'config', 'init', 'limits', 'dashboard', 'stop-web']) {
       stdout = []
       expect(await run(command, '--help')).toBe(0)
       expect(stdout.join('')).toContain('Usage:')

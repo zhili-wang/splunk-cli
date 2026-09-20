@@ -437,7 +437,26 @@ HTTP 响应为紧凑格式）。
 * **前端不接触凭据**：浏览器从不保存 Splunk 密码或 Session Token。
 * **前端无法绕过限制**：时间范围与条数上限由 Service 层强制，超限直接拒绝。
 
-### `init`
+启动成功后会登记进 `~/.splunk-cli/servers.json`，优雅关闭时自行注销；`stop-web` 靠这份名册（外加进程扫描兜底）找到它。
+
+### `stop-web`
+
+```bash
+splunk-cli stop-web            # 停掉所有正在跑的本机 dashboard
+splunk-cli stop-web --no-scan  # 只停名册里登记过的，不扫进程表
+splunk-cli stop-web --json
+```
+
+停掉所有由本 CLI 启动、仍在监听的 dashboard。每个服务的停止走**三级阶梯**：先请求
+`POST /api/shutdown` 请它自己体面地关闭，不应答再退到 `SIGTERM`，超时后**如实报告失败，
+绝不升级到 `SIGKILL`**——强杀会跳过进程自己的清理（注销名册、释放端口、冲刷日志）。
+
+* **定位两条线索**：先读 `~/.splunk-cli/servers.json` 名册，再扫 `ps` 找命令行里带
+  `splunk-cli dashboard` 的进程（名册丢了也能兜底）。每个候选都必须通过回环端口探测
+  确认身份，绝不碰不属于本 CLI 的进程。
+* **不需要 Splunk 凭据**：这条命令刻意不读配置、不连 Splunk——用户想停掉面板，
+  往往正是因为 Splunk 连不上了。
+* **退出码**：0 = 全部停掉 / 本来就没有在跑的；1 = 至少一个没停掉。
 
 ```bash
 splunk-cli init
